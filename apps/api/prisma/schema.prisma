@@ -6,3 +6,232 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// ==========================================
+// TENANT
+// ==========================================
+
+model Firm {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  associates Associate[]
+  leaveTypes LeaveType[]
+  expenses   Expense[]
+}
+
+// ==========================================
+// AUTH / USERS
+// ==========================================
+
+model User {
+  id           String   @id @default(uuid())
+  firmId       String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  associateId  String?  @unique
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  firm      Firm       @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  associate Associate? @relation(fields: [associateId], references: [id])
+
+  approvedLeaves LeaveRequest[] @relation("LeaveApprover")
+  loggedExpenses Expense[]      @relation("ExpenseLoggedBy")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  ASSOCIATE
+}
+
+// ==========================================
+// HR: ASSOCIATES
+// ==========================================
+
+model Associate {
+  id                 String          @id @default(uuid())
+  firmId             String
+  fullName           String
+  email              String?
+  phone              String?
+  designation        String?
+  department         String?
+  employmentType     EmploymentType?
+  workMode           WorkMode        @default(ONSITE)
+  joiningDate        DateTime
+  salary             Decimal         @db.Decimal(12, 2)
+  reportingManagerId String?
+  status             AssociateStatus @default(ACTIVE)
+  hikvisionUserId    String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  firm              Firm           @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  reportingManager  Associate?     @relation("ManagerHierarchy", fields: [reportingManagerId], references: [id])
+  directReports     Associate[]    @relation("ManagerHierarchy")
+  user              User?
+  attendanceRecords Attendance[]
+  leaveRequests     LeaveRequest[]
+  leaveBalances     LeaveBalance[]
+  expenses          Expense[]      @relation("ExpenseForAssociate")
+}
+
+enum EmploymentType {
+  FULL_TIME
+  CONTRACT
+  PARTNER
+}
+
+enum WorkMode {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
+enum AssociateStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ==========================================
+// HR: ATTENDANCE
+// ==========================================
+
+model Attendance {
+  id          String           @id @default(uuid())
+  associateId String
+  date        DateTime         @db.Date
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      AttendanceStatus
+  source      AttendanceSource
+  notes       String?
+  createdAt   DateTime         @default(now())
+
+  associate Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([associateId, date])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+}
+
+enum AttendanceSource {
+  BIOMETRIC_IMPORT
+  REMOTE_CHECKIN
+  MANUAL_ADMIN
+}
+
+// ==========================================
+// HR: LEAVE
+// ==========================================
+
+model LeaveType {
+  id              String  @id @default(uuid())
+  firmId          String
+  name            String
+  annualAllotment Int
+  carriesForward  Boolean @default(false)
+
+  firm          Firm           @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+
+  @@unique([firmId, name])
+}
+
+model LeaveRequest {
+  id          String             @id @default(uuid())
+  associateId String
+  leaveTypeId String
+  startDate   DateTime           @db.Date
+  endDate     DateTime           @db.Date
+  reason      String?
+  status      LeaveRequestStatus @default(PENDING)
+  approverId  String?
+  decidedAt   DateTime?
+  createdAt   DateTime           @default(now())
+
+  associate Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+  approver  User?     @relation("LeaveApprover", fields: [approverId], references: [id])
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveBalance {
+  id          String @id @default(uuid())
+  associateId String
+  leaveTypeId String
+  year        Int
+  allotted    Int
+  used        Int    @default(0)
+
+  associate Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@unique([associateId, leaveTypeId, year])
+}
+
+// ==========================================
+// EXPENSE TRACKING
+// ==========================================
+
+model Expense {
+  id              String      @id @default(uuid())
+  firmId          String
+  type            ExpenseType
+  category        String
+  description     String
+  amount          Decimal     @db.Decimal(12, 2)
+  date            DateTime    @db.Date
+  vendor          String?
+  paymentMethod   String?
+  receiptUrl      String?
+  associateId     String?
+  loggedById      String?
+  isAutoGenerated Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+
+  firm      Firm       @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  associate Associate? @relation("ExpenseForAssociate", fields: [associateId], references: [id])
+  loggedBy  User?      @relation("ExpenseLoggedBy", fields: [loggedById], references: [id])
+}
+
+enum ExpenseType {
+  FIXED
+  MANUAL
+}
+
+model RecurringExpenseTemplate {
+  id           String       @id @default(uuid())
+  firmId       String
+  category     String
+  description  String
+  amount       Decimal      @db.Decimal(12, 2)
+  billingCycle BillingCycle @default(MONTHLY)
+  isActive     Boolean      @default(true)
+  nextRunDate  DateTime     @db.Date
+  createdAt    DateTime     @default(now())
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
