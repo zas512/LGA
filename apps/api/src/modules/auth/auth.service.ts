@@ -31,7 +31,7 @@ export class AuthService {
         email: dto.email,
         passwordHash,
         role: dto.role,
-        firmId: dto.firmId
+        firmId: dto.role === "SUPER_ADMIN" ? null : dto.firmId
       }
     });
     const tokens = await this.issueTokens({

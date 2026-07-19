@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -29,18 +29,18 @@ model Firm {
 // ==========================================
 
 model User {
-  id           String   @id @default(uuid())
-  firmId       String
-  email        String   @unique
-  passwordHash String
-  role         UserRole
-  associateId  String?  @unique
-  isActive     Boolean  @default(true)
-  refreshTokenHash   String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(uuid())
+  firmId           String?
+  email            String   @unique
+  passwordHash     String
+  role             UserRole
+  associateId      String?  @unique
+  isActive         Boolean  @default(true)
+  refreshTokenHash String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  firm      Firm       @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  firm      Firm?      @relation(fields: [firmId], references: [id], onDelete: Cascade)
   associate Associate? @relation(fields: [associateId], references: [id])
 
   approvedLeaves LeaveRequest[] @relation("LeaveApprover")
@@ -48,6 +48,7 @@ model User {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   OWNER
   ADMIN
   ASSOCIATE

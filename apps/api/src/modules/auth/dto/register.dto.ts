@@ -1,4 +1,10 @@
-import { IsEmail, IsEnum, IsString, MinLength } from "class-validator";
+import {
+  IsEmail,
+  IsEnum,
+  IsString,
+  MinLength,
+  ValidateIf
+} from "class-validator";
 import { UserRole } from "../../../generated/prisma/client";
 
 export class RegisterDto {
@@ -12,6 +18,7 @@ export class RegisterDto {
   @IsEnum(UserRole)
   role!: UserRole;
 
+  @ValidateIf((dto: RegisterDto) => dto.role !== UserRole.SUPER_ADMIN)
   @IsString()
-  firmId!: string;
+  firmId?: string;
 }
