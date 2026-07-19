@@ -10,6 +10,7 @@ import { AttendanceModule } from './modules/hr/attendance/attendance.module';
 import { LeaveModule } from './modules/hr/leave/leave.module';
 import { FixedExpensesModule } from './modules/expenses/fixed-expenses/fixed-expenses.module';
 import { ManualExpensesModule } from './modules/expenses/manual-expenses/manual-expenses.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ManualExpensesModule } from './modules/expenses/manual-expenses/manual-
     LeaveModule,
     FixedExpensesModule,
     ManualExpensesModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [
