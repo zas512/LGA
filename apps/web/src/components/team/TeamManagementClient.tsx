@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -27,12 +26,12 @@ import {
 import { UserPlus, Shield, Users, RefreshCw } from "lucide-react";
 
 const createMemberSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  email: z.email({ message: "Please enter a valid email address" }),
   password: z
     .string()
     .min(8, { message: "Password must be at least 8 characters" }),
   role: z.enum(["ADMIN", "ASSOCIATE"], {
-    errorMap: () => ({ message: "Role must be ADMIN or ASSOCIATE" })
+    error: () => ({ message: "Role must be ADMIN or ASSOCIATE" })
   })
 });
 
@@ -45,6 +44,16 @@ interface TeamMember {
   firmId: string;
   isActive: boolean;
   createdAt: string;
+}
+
+function getRoleBadgeVariant(role: string): "navy" | "secondary" | "outline" {
+  if (role === "OWNER") {
+    return "navy";
+  }
+  if (role === "ADMIN") {
+    return "secondary";
+  }
+  return "outline";
 }
 
 export function TeamManagementClient() {
@@ -110,6 +119,56 @@ export function TeamManagementClient() {
     setSuccessMessage(null);
     createMutation.mutate(values);
   }
+
+  const renderRosterContent = () => {
+    if (isLoading) {
+      return (
+        <div className="py-8 text-center text-xs text-muted-foreground font-medium">
+          Loading firm roster...
+        </div>
+      );
+    }
+
+    if (teamMembers.length === 0) {
+      return (
+        <div className="py-8 text-center text-xs text-muted-foreground font-medium">
+          No team members registered yet.
+        </div>
+      );
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>EMPLOYEE EMAIL</TableHead>
+            <TableHead>CREATED DATE</TableHead>
+            <TableHead className="text-right">ROLE</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {teamMembers.map((member) => (
+            <TableRow key={member.id}>
+              <TableCell className="font-bold text-foreground">
+                {member.email}
+              </TableCell>
+              <TableCell className="text-muted-foreground font-medium">
+                <span className="flex items-center gap-1">
+                  <Shield className="h-3 w-3 text-primary" />
+                  {new Date(member.createdAt).toLocaleDateString()}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <Badge variant={getRoleBadgeVariant(member.role)}>
+                  {member.role}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
 
   return (
     <div className="grid gap-6 md:grid-cols-12">
@@ -233,55 +292,7 @@ export function TeamManagementClient() {
             />
           </Button>
         </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="py-8 text-center text-xs text-muted-foreground font-medium">
-              Loading firm roster...
-            </div>
-          ) : teamMembers.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground font-medium">
-              No team members registered yet.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>EMPLOYEE EMAIL</TableHead>
-                  <TableHead>CREATED DATE</TableHead>
-                  <TableHead className="text-right">ROLE</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-bold text-foreground">
-                      {member.email}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-medium">
-                      <span className="flex items-center gap-1">
-                        <Shield className="h-3 w-3 text-primary" />
-                        {new Date(member.createdAt).toLocaleDateString()}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant={
-                          member.role === "OWNER"
-                            ? "navy"
-                            : member.role === "ADMIN"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {member.role}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
+        <CardContent>{renderRosterContent()}</CardContent>
       </Card>
     </div>
   );

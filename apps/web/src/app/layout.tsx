@@ -39,6 +39,7 @@ export default function RootLayout({
         dmSans.variable,
         interHeading.variable
       )}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

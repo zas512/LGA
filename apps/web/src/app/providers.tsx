@@ -1,7 +1,9 @@
 "use client";
+
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 export default function Providers({
   children
@@ -26,7 +28,7 @@ export default function Providers({
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -13,6 +13,7 @@ export async function backendFetch(
 ): Promise<Response> {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;
+  const refreshToken = cookieStore.get("refresh_token")?.value;
 
   const headers = new Headers(options.headers);
   if (!headers.has("Content-Type") && options.body) {
@@ -22,9 +23,17 @@ export async function backendFetch(
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
-  return fetch(getBackendUrl(endpoint), {
+  const targetUrl = getBackendUrl(endpoint);
+  console.log(
+    `[server-api:backendFetch] 🚀 ${options.method || "GET"} ${targetUrl} | Cookies -> access_token: ${accessToken ? "PRESENT (" + accessToken.slice(0, 10) + "...)" : "MISSING"}, refresh_token: ${refreshToken ? "PRESENT" : "MISSING"}`
+  );
+
+  const res = await fetch(targetUrl, {
     ...options,
     headers,
     cache: options.cache || "no-store"
   });
+
+  console.log(`[server-api:backendFetch] 📥 Status: ${res.status} for ${targetUrl}`);
+  return res;
 }

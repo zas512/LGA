@@ -188,8 +188,9 @@ export function DashboardAnalytics() {
                     paddingAngle={4}
                     dataKey="value"
                   >
-                    {categoryDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {categoryDistribution.map((entry) => (
+                      // eslint-disable-next-line @typescript-eslint/no-deprecated
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip

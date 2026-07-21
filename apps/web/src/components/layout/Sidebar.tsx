@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -32,8 +33,8 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       roles: ["OWNER", "ADMIN", "ASSOCIATE", "SUPER_ADMIN"]
     },
     {
-      title: "Team & Associates",
-      href: "/team",
+      title: "Associates & Staff",
+      href: "/associates",
       icon: Users,
       roles: ["OWNER", "ADMIN"]
     },

@@ -93,6 +93,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email }
     });
+    console.log("user in backend: ", user);
     if (!user?.isActive) {
       throw new UnauthorizedException("Invalid credentials");
     }

@@ -16,7 +16,7 @@ export function Header({
   userRole,
   title = "Dashboard",
   breadcrumb = "Firm / Overview"
-}: HeaderProps) {
+}: Readonly<HeaderProps>) {
   const canManage = userRole === "OWNER" || userRole === "ADMIN";
 
   return (
@@ -55,10 +55,10 @@ export function Header({
 
         {/* Quick Action Button */}
         {canManage && (
-          <Link href="/team">
+          <Link href="/associates">
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold gap-1.5 px-4 h-9 shadow-xs">
               <Plus className="h-4 w-4 text-primary-foreground" />
-              <span>Add Team Member</span>
+              <span>Add Associate</span>
             </Button>
           </Link>
         )}

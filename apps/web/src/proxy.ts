@@ -1,106 +1,83 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  AUTH_COOKIE_NAMES,
+  decodeJwt,
+  refreshAuthTokens,
+  attachAuthCookiesToResponse
+} from "@/lib/session";
 
-function decodeJwt(token: string) {
-  try {
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replaceAll("-", "+").replaceAll("_", "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map(
-          (c) => "%" + ("00" + (c.codePointAt(0) ?? 0).toString(16)).slice(-2)
-        )
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/associates",
+  "/expenses",
+  "/attendance",
+  "/platform"
+];
+const FIRM_SCOPED_PREFIXES = [
+  "/dashboard",
+  "/associates",
+  "/expenses",
+  "/attendance"
+];
+
+function matchesAnyPrefix(pathname: string, prefixes: string[]) {
+  return prefixes.some((prefix) => pathname.startsWith(prefix));
+}
+
+function redirectRoleAwareFromLogin(
+  request: NextRequest,
+  user: { role?: string } | null
+) {
+  const destination = user?.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
+  return NextResponse.redirect(new URL(destination, request.url));
+}
+
+function redirectIfWrongArea(
+  request: NextRequest,
+  pathname: string,
+  user: { role?: string } | null
+) {
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  if (pathname.startsWith("/platform") && user && !isSuperAdmin) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
+  if (matchesAnyPrefix(pathname, FIRM_SCOPED_PREFIXES) && isSuperAdmin) {
+    return NextResponse.redirect(new URL("/platform", request.url));
+  }
+  return null;
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  let accessToken = request.cookies.get("access_token")?.value;
-  const refreshToken = request.cookies.get("refresh_token")?.value;
+  let accessToken = request.cookies.get(AUTH_COOKIE_NAMES.ACCESS_TOKEN)?.value;
+  const refreshToken = request.cookies.get(
+    AUTH_COOKIE_NAMES.REFRESH_TOKEN
+  )?.value;
 
   const response = NextResponse.next();
 
   if (!accessToken && refreshToken) {
-    try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-      const res = await fetch(`${baseUrl}/auth/refresh`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${refreshToken}`,
-          "Content-Type": "application/json"
-        }
-      });
-      if (res.ok) {
-        const data = (await res.json()) as {
-          accessToken: string;
-          refreshToken: string;
-        };
-        accessToken = data.accessToken;
-        response.cookies.set("access_token", data.accessToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 15 * 60
-        });
-        response.cookies.set("refresh_token", data.refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 7 * 24 * 60 * 60
-        });
-      }
-    } catch {
-      // Ignore token refresh error in edge proxy
+    const tokens = await refreshAuthTokens(refreshToken);
+    if (tokens) {
+      accessToken = tokens.accessToken;
+      attachAuthCookiesToResponse(response, tokens);
     }
   }
 
   const hasToken = Boolean(accessToken || refreshToken);
 
-  if (
-    !hasToken &&
-    (pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/team") ||
-      pathname.startsWith("/expenses") ||
-      pathname.startsWith("/attendance") ||
-      pathname.startsWith("/platform"))
-  ) {
+  if (!hasToken && matchesAnyPrefix(pathname, PROTECTED_PREFIXES)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   if (hasToken) {
     const user = accessToken ? decodeJwt(accessToken) : null;
     if (pathname === "/login") {
-      if (user?.role === "SUPER_ADMIN") {
-        return NextResponse.redirect(new URL("/platform", request.url));
-      }
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return redirectRoleAwareFromLogin(request, user);
     }
-    if (
-      pathname.startsWith("/platform") &&
-      user &&
-      user.role !== "SUPER_ADMIN"
-    ) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-    if (
-      (pathname.startsWith("/dashboard") ||
-        pathname.startsWith("/team") ||
-        pathname.startsWith("/expenses") ||
-        pathname.startsWith("/attendance")) &&
-      user?.role === "SUPER_ADMIN"
-    ) {
-      return NextResponse.redirect(new URL("/platform", request.url));
-    }
+    const areaRedirect = redirectIfWrongArea(request, pathname, user);
+    if (areaRedirect) return areaRedirect;
   }
 
   return response;
@@ -108,11 +85,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/login",
     "/dashboard/:path*",
-    "/team/:path*",
+    "/associates/:path*",
     "/expenses/:path*",
     "/attendance/:path*",
-    "/platform/:path*"
+    "/platform/:path*",
+    "/login"
   ]
 };

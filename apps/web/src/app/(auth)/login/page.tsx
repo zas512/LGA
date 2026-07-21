@@ -17,6 +17,7 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Scale } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -28,8 +29,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { login: authLogin } = useAuth();
 
   const {
     register,
@@ -45,26 +46,10 @@ export default function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginFormValues) => {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.message || "Failed to sign in");
-      }
-      return result;
-    },
-    onSuccess: (data) => {
-      if (data.user?.role === "SUPER_ADMIN") {
-        router.push("/platform");
-      } else {
-        router.push("/dashboard");
-      }
-      router.refresh();
+      await authLogin(data);
     },
     onError: (err: Error) => {
+      console.error("%c[Client Auth] ❌ Login error:", "color: #ef4444; font-weight: bold;", err.message);
       setErrorMessage(err.message);
     }
   });
@@ -92,7 +77,8 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           <p className="font-serif text-3xl leading-relaxed tracking-wide text-primary-foreground/90 italic">
-            &quot;Jurisprudence is the knowledge of things divine and human, the science of the just and the unjust.&quot;
+            &quot;Jurisprudence is the knowledge of things divine and human, the
+            science of the just and the unjust.&quot;
           </p>
           <p className="font-sans text-xs uppercase tracking-widest text-primary-foreground/70 font-bold">
             — Ulpian, Digest of Roman Law
@@ -125,7 +111,10 @@ export default function LoginPage() {
               )}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs font-bold text-foreground">
+                  <Label
+                    htmlFor="email"
+                    className="text-xs font-bold text-foreground"
+                  >
                     Professional Email
                   </Label>
                   <Input
@@ -137,12 +126,17 @@ export default function LoginPage() {
                     className="bg-card border-border text-foreground focus-visible:ring-primary/40 rounded-xl"
                   />
                   {errors.email && (
-                    <p className="text-xs text-destructive font-semibold">{errors.email.message}</p>
+                    <p className="text-xs text-destructive font-semibold">
+                      {errors.email.message}
+                    </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-xs font-bold text-foreground">
+                  <Label
+                    htmlFor="password"
+                    className="text-xs font-bold text-foreground"
+                  >
                     Security Password
                   </Label>
                   <Input
@@ -153,7 +147,9 @@ export default function LoginPage() {
                     className="bg-card border-border text-foreground focus-visible:ring-primary/40 rounded-xl"
                   />
                   {errors.password && (
-                    <p className="text-xs text-destructive font-semibold">{errors.password.message}</p>
+                    <p className="text-xs text-destructive font-semibold">
+                      {errors.password.message}
+                    </p>
                   )}
                 </div>
 
@@ -162,7 +158,9 @@ export default function LoginPage() {
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold text-sm tracking-tight h-10 mt-2 shadow-xs"
                   disabled={loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? "Authenticating..." : "Sign In to LGA Terminal"}
+                  {loginMutation.isPending
+                    ? "Authenticating..."
+                    : "Sign In to LGA Terminal"}
                 </Button>
               </form>
             </CardContent>
