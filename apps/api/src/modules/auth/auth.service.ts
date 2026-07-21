@@ -1,7 +1,9 @@
 import {
   Injectable,
   UnauthorizedException,
-  ConflictException
+  ConflictException,
+  ForbiddenException,
+  BadRequestException
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import type { SignOptions } from "jsonwebtoken";
@@ -10,6 +12,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { JwtPayload } from "./strategies/access-token.strategy";
+import { UserRole } from "../../generated/prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -19,21 +22,63 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    if (dto.role === UserRole.ADMIN || dto.role === UserRole.ASSOCIATE) {
+      throw new ForbiddenException(
+        "Self-registration is disabled for ADMIN and ASSOCIATE roles. Firm administrators must create team member accounts."
+      );
+    }
+
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email }
     });
     if (existing) {
       throw new ConflictException("A user with this email already exists");
     }
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    if (dto.role === UserRole.OWNER) {
+      if (!dto.firmName) {
+        throw new BadRequestException(
+          "firmName is required when registering a Firm Owner"
+        );
+      }
+
+      const result = await this.prisma.$transaction(async (tx) => {
+        const firm = await tx.firm.create({
+          data: { name: dto.firmName! }
+        });
+        const user = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash,
+            role: UserRole.OWNER,
+            firmId: firm.id
+          }
+        });
+        return user;
+      });
+
+      const tokens = await this.issueTokens({
+        sub: result.id,
+        email: result.email,
+        role: result.role,
+        firmId: result.firmId
+      });
+      await this.saveRefreshTokenHash(result.id, tokens.refreshToken);
+      return tokens;
+    }
+
+    // SUPER_ADMIN
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         passwordHash,
-        role: dto.role,
-        firmId: dto.role === "SUPER_ADMIN" ? null : dto.firmId
+        role: UserRole.SUPER_ADMIN,
+        firmId: null
       }
     });
+
     const tokens = await this.issueTokens({
       sub: user.id,
       email: user.email,

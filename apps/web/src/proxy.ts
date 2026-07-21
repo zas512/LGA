@@ -29,6 +29,7 @@ export function proxy(request: NextRequest) {
   if (
     !hasToken &&
     (pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/team") ||
       pathname.startsWith("/expenses") ||
       pathname.startsWith("/attendance") ||
       pathname.startsWith("/platform"))
@@ -53,6 +54,7 @@ export function proxy(request: NextRequest) {
     }
     if (
       (pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/team") ||
         pathname.startsWith("/expenses") ||
         pathname.startsWith("/attendance")) &&
       user?.role === "SUPER_ADMIN"
@@ -60,7 +62,6 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/platform", request.url));
     }
   }
-
   return NextResponse.next();
 }
 
@@ -68,6 +69,7 @@ export const config = {
   matcher: [
     "/login",
     "/dashboard/:path*",
+    "/team/:path*",
     "/expenses/:path*",
     "/attendance/:path*",
     "/platform/:path*"

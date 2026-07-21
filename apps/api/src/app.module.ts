@@ -4,13 +4,14 @@ import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { APP_GUARD } from "@nestjs/core";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { AuthModule } from './modules/auth/auth.module';
-import { AssociatesModule } from './modules/hr/associates/associates.module';
-import { AttendanceModule } from './modules/hr/attendance/attendance.module';
-import { LeaveModule } from './modules/hr/leave/leave.module';
-import { FixedExpensesModule } from './modules/expenses/fixed-expenses/fixed-expenses.module';
-import { ManualExpensesModule } from './modules/expenses/manual-expenses/manual-expenses.module';
-import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from "./modules/auth/auth.module";
+import { UsersModule } from "./modules/users/users.module";
+import { AssociatesModule } from "./modules/hr/associates/associates.module";
+import { AttendanceModule } from "./modules/hr/attendance/attendance.module";
+import { LeaveModule } from "./modules/hr/leave/leave.module";
+import { FixedExpensesModule } from "./modules/expenses/fixed-expenses/fixed-expenses.module";
+import { ManualExpensesModule } from "./modules/expenses/manual-expenses/manual-expenses.module";
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
   imports: [
@@ -18,24 +19,25 @@ import { PrismaModule } from './prisma/prisma.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 50,
-      },
+        limit: 50
+      }
     ]),
     AuthModule,
+    UsersModule,
     AssociatesModule,
     AttendanceModule,
     LeaveModule,
     FixedExpensesModule,
     ManualExpensesModule,
-    PrismaModule,
+    PrismaModule
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-  ],
+      useClass: ThrottlerGuard
+    }
+  ]
 })
 export class AppModule {}

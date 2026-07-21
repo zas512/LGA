@@ -1,6 +1,7 @@
 import {
   IsEmail,
   IsEnum,
+  IsOptional,
   IsString,
   MinLength,
   ValidateIf
@@ -18,7 +19,8 @@ export class RegisterDto {
   @IsEnum(UserRole)
   role!: UserRole;
 
-  @ValidateIf((dto: RegisterDto) => dto.role !== UserRole.SUPER_ADMIN)
+  @ValidateIf((dto: RegisterDto) => dto.role === UserRole.OWNER)
   @IsString()
-  firmId?: string;
+  @IsOptional()
+  firmName?: string;
 }
