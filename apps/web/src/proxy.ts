@@ -20,10 +20,50 @@ function decodeJwt(token: string) {
   }
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const accessToken = request.cookies.get("access_token")?.value;
+  let accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
+
+  const response = NextResponse.next();
+
+  if (!accessToken && refreshToken) {
+    try {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+      const res = await fetch(`${baseUrl}/auth/refresh`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${refreshToken}`,
+          "Content-Type": "application/json"
+        }
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          accessToken: string;
+          refreshToken: string;
+        };
+        accessToken = data.accessToken;
+        response.cookies.set("access_token", data.accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 15 * 60
+        });
+        response.cookies.set("refresh_token", data.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 7 * 24 * 60 * 60
+        });
+      }
+    } catch {
+      // Ignore token refresh error in edge proxy
+    }
+  }
+
   const hasToken = Boolean(accessToken || refreshToken);
 
   if (
@@ -62,7 +102,8 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/platform", request.url));
     }
   }
-  return NextResponse.next();
+
+  return response;
 }
 
 export const config = {

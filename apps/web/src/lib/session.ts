@@ -34,12 +34,14 @@ export async function getSession(): Promise<{
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value ?? null;
   const refreshToken = cookieStore.get("refresh_token")?.value ?? null;
+
   if (accessToken) {
     const user = decodeJwt(accessToken);
     if (user) {
       return { user, accessToken };
     }
   }
+
   if (refreshToken) {
     try {
       const res = await backendFetch("/auth/refresh", {
@@ -48,6 +50,7 @@ export async function getSession(): Promise<{
           Authorization: `Bearer ${refreshToken}`
         }
       });
+
       if (res.ok) {
         const data = (await res.json()) as {
           accessToken: string;
@@ -55,20 +58,25 @@ export async function getSession(): Promise<{
         };
         const newUser = decodeJwt(data.accessToken);
         if (newUser) {
-          cookieStore.set("access_token", data.accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 15 * 60
-          });
-          cookieStore.set("refresh_token", data.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 7 * 24 * 60 * 60
-          });
+          try {
+            cookieStore.set("access_token", data.accessToken, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+              path: "/",
+              maxAge: 15 * 60
+            });
+            cookieStore.set("refresh_token", data.refreshToken, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+              path: "/",
+              maxAge: 7 * 24 * 60 * 60
+            });
+          } catch {
+            // In Next.js Server Components during SSR render, cookies cannot be modified in response headers.
+            // We safely catch this while returning the refreshed token context for the current render.
+          }
           return { user: newUser, accessToken: data.accessToken };
         }
       }
@@ -76,6 +84,7 @@ export async function getSession(): Promise<{
       console.error("Auto refresh failed in getSession:", err);
     }
   }
+
   return { user: null, accessToken: null };
 }
 
