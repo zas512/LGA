@@ -1,10 +1,23 @@
 "use client";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 
-export default function providers({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient();
+export default function Providers({
+  children
+}: Readonly<{ children: ReactNode }>) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+            refetchOnWindowFocus: false
+          }
+        }
+      })
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
