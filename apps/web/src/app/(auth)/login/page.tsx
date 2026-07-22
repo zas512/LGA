@@ -1,6 +1,4 @@
 "use client";
-
-import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,11 +14,10 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Scale } from "lucide-react";
-import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  email: z.email({ message: "Please enter a valid email address" }),
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters" })
@@ -47,12 +44,12 @@ export default function LoginPage() {
     mutationFn: async (data: LoginFormValues) => {
       await authLogin(data);
     },
-    onSuccess: () => {
-      toast.success("Signed in successfully!");
-    },
     onError: (err: Error) => {
-      console.error("%c[Client Auth] ❌ Login error:", "color: #ef4444; font-weight: bold;", err.message);
-      toast.error(err.message || "Failed to sign in");
+      console.error(
+        "%c[Client Auth] Login error:",
+        "color: #ef4444; font-weight: bold;",
+        err.message
+      );
     }
   });
 

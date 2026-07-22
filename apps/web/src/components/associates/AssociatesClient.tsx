@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -57,6 +56,7 @@ import {
 
 // Validation Schema for creating a User / Associate under the firm
 const createMemberSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.email({ message: "Valid email address is required" }),
   password: z
     .string()
@@ -71,6 +71,8 @@ type CreateMemberValues = z.infer<typeof createMemberSchema>;
 interface FirmMember {
   id: string;
   email: string;
+  name?: string | null;
+  mustChangePassword?: boolean;
   role: "OWNER" | "ADMIN" | "ASSOCIATE" | "SUPER_ADMIN";
   firmId: string | null;
   isActive: boolean;
@@ -154,6 +156,7 @@ export function AssociatesClient({
   } = useForm<CreateMemberValues>({
     resolver: zodResolver(createMemberSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
       role: "ASSOCIATE"
@@ -196,25 +199,38 @@ export function AssociatesClient({
   const columns = useMemo<ColumnDef<FirmMember>[]>(
     () => [
       {
-        accessorKey: "email",
-        header: "MEMBER EMAIL",
+        accessorKey: "name",
+        header: "FULL NAME",
         cell: ({ row }) => {
           const member = row.original;
-          const initials = member.email.substring(0, 2).toUpperCase();
+          const initials = member.name
+            ? member.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .substring(0, 2)
+                .toUpperCase()
+            : member.email.substring(0, 2).toUpperCase();
           return (
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
                 {initials}
               </div>
-              <div>
-                <p className="font-bold text-foreground leading-tight">
-                  {member.email}
-                </p>
-                <p className="text-[11px] text-muted-foreground font-mono">
-                  ID: {member.id.substring(0, 8)}...
-                </p>
-              </div>
+              <p className="font-bold text-foreground leading-tight">
+                {member.name || "N/A"}
+              </p>
             </div>
+          );
+        }
+      },
+      {
+        accessorKey: "email",
+        header: "MEMBER EMAIL",
+        cell: ({ row }) => {
+          return (
+            <span className="text-xs text-muted-foreground font-medium">
+              {row.original.email}
+            </span>
           );
         }
       },
@@ -516,14 +532,29 @@ export function AssociatesClient({
               <span className="text-destructive font-bold">*</span>).
             </DialogDescription>
           </DialogHeader>
-
-          {errorMessage && (
-            <div className="rounded-xl bg-destructive/15 p-3 text-xs text-destructive font-semibold border border-destructive/20">
-              {errorMessage}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
+            {/* Full Name * */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="name"
+                className="text-xs font-bold text-foreground"
+              >
+                Full Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="John Doe"
+                {...register("name")}
+                className="bg-card text-xs rounded-xl"
+              />
+              {errors.name && (
+                <p className="text-[11px] text-destructive font-semibold">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
             {/* Email Address * */}
             <div className="space-y-1.5">
               <Label
@@ -627,11 +658,18 @@ export function AssociatesClient({
               <DialogHeader>
                 <div className="flex items-center gap-3 pb-2">
                   <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground font-black text-base flex items-center justify-center border border-primary/20 shadow-xs">
-                    {selectedMember.email.substring(0, 2).toUpperCase()}
+                    {selectedMember.name
+                      ? selectedMember.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .substring(0, 2)
+                          .toUpperCase()
+                      : selectedMember.email.substring(0, 2).toUpperCase()}
                   </div>
                   <div>
                     <DialogTitle className="text-lg font-bold">
-                      {selectedMember.email}
+                      {selectedMember.name || selectedMember.email}
                     </DialogTitle>
                     <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                       <span>Role: {selectedMember.role}</span>
@@ -646,6 +684,18 @@ export function AssociatesClient({
 
               <div className="space-y-3 pt-2">
                 <div className="grid grid-cols-2 gap-3 text-xs">
+                  {selectedMember.name && (
+                    <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 col-span-2">
+                      <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5 text-primary" />
+                        Full Name
+                      </p>
+                      <p className="font-bold text-foreground truncate mt-1">
+                        {selectedMember.name}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
                     <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
                       <Mail className="h-3.5 w-3.5 text-primary" />
@@ -683,6 +733,18 @@ export function AssociatesClient({
                     </p>
                     <p className="font-bold text-emerald-600 mt-1">
                       {selectedMember.isActive ? "Active" : "Inactive"}
+                    </p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
+                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                      Password Status
+                    </p>
+                    <p className="font-bold text-foreground mt-1">
+                      {selectedMember.mustChangePassword
+                        ? "Pending Reset"
+                        : "Set by User"}
                     </p>
                   </div>
                 </div>

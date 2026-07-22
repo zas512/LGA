@@ -15,7 +15,12 @@ export class AssociatesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(firmId: string | null, dto: CreateAssociateDto) {
-    console.log("[API AssociatesService.create] Creating user for firmId:", firmId, "Email:", dto.email);
+    console.log(
+      "[API AssociatesService.create] Creating user for firmId:",
+      firmId,
+      "Email:",
+      dto.email
+    );
     if (!firmId) {
       throw new BadRequestException("Administrator must belong to a firm");
     }
@@ -24,7 +29,9 @@ export class AssociatesService {
       where: { email: dto.email }
     });
     if (existingUser) {
-      throw new ConflictException("A user account with this email already exists");
+      throw new ConflictException(
+        "A user account with this email already exists"
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -33,17 +40,21 @@ export class AssociatesService {
     const newUser = await this.prisma.user.create({
       data: {
         email: dto.email,
+        name: dto.name || null,
         passwordHash,
         role: assignedRole,
         firmId,
-        isActive: true
+        isActive: true,
+        mustChangePassword: true
       },
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         firmId: true,
         isActive: true,
+        mustChangePassword: true,
         createdAt: true,
         firm: {
           select: {
@@ -54,12 +65,18 @@ export class AssociatesService {
       }
     });
 
-    console.log("[API AssociatesService.create] User created successfully:", newUser.id);
+    console.log(
+      "[API AssociatesService.create] User created successfully:",
+      newUser.id
+    );
     return newUser;
   }
 
   async findAll(firmId: string | null) {
-    console.log("[API AssociatesService.findAll] Incoming firmId from JWT:", firmId);
+    console.log(
+      "[API AssociatesService.findAll] Incoming firmId from JWT:",
+      firmId
+    );
     if (!firmId) {
       throw new BadRequestException("Administrator must belong to a firm");
     }
@@ -69,9 +86,11 @@ export class AssociatesService {
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         firmId: true,
         isActive: true,
+        mustChangePassword: true,
         createdAt: true,
         firm: {
           select: {
@@ -83,12 +102,19 @@ export class AssociatesService {
       orderBy: { createdAt: "desc" }
     });
 
-    console.log(`[API AssociatesService.findAll] Found ${members.length} members for firmId: ${firmId}`);
+    console.log(
+      `[API AssociatesService.findAll] Found ${members.length} members for firmId: ${firmId}`
+    );
     return members;
   }
 
   async findOne(firmId: string | null, id: string) {
-    console.log("[API AssociatesService.findOne] Looking for user id:", id, "in firmId:", firmId);
+    console.log(
+      "[API AssociatesService.findOne] Looking for user id:",
+      id,
+      "in firmId:",
+      firmId
+    );
     if (!firmId) {
       throw new BadRequestException("Administrator must belong to a firm");
     }
@@ -98,9 +124,11 @@ export class AssociatesService {
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         firmId: true,
         isActive: true,
+        mustChangePassword: true,
         createdAt: true,
         firm: {
           select: {
@@ -119,7 +147,12 @@ export class AssociatesService {
   }
 
   async update(firmId: string | null, id: string, dto: UpdateAssociateDto) {
-    console.log("[API AssociatesService.update] Updating user id:", id, "in firmId:", firmId);
+    console.log(
+      "[API AssociatesService.update] Updating user id:",
+      id,
+      "in firmId:",
+      firmId
+    );
     if (!firmId) {
       throw new BadRequestException("Administrator must belong to a firm");
     }
@@ -137,6 +170,7 @@ export class AssociatesService {
       passwordHash?: string;
       role?: UserRole;
       isActive?: boolean;
+      name?: string | null;
     } = {};
 
     if (dto.email && dto.email !== existingUser.email) {
@@ -144,7 +178,9 @@ export class AssociatesService {
         where: { email: dto.email }
       });
       if (emailExists) {
-        throw new ConflictException("A user account with this email already exists");
+        throw new ConflictException(
+          "A user account with this email already exists"
+        );
       }
       data.email = dto.email;
     }
@@ -161,15 +197,21 @@ export class AssociatesService {
       data.isActive = dto.isActive;
     }
 
+    if (dto.name !== undefined) {
+      data.name = dto.name;
+    }
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data,
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         firmId: true,
         isActive: true,
+        mustChangePassword: true,
         createdAt: true,
         firm: {
           select: {
@@ -180,7 +222,10 @@ export class AssociatesService {
       }
     });
 
-    console.log("[API AssociatesService.update] User updated successfully:", updatedUser.id);
+    console.log(
+      "[API AssociatesService.update] User updated successfully:",
+      updatedUser.id
+    );
     return updatedUser;
   }
 }

@@ -21,4 +21,8 @@ export class CreateAssociateDto {
   @IsEnum(UserRole, { message: "Role must be ADMIN or ASSOCIATE" })
   @IsOptional()
   role?: UserRole;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
 }
