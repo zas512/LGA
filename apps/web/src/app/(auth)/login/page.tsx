@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -17,6 +16,7 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Scale } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const loginSchema = z.object({
@@ -29,7 +29,6 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { login: authLogin } = useAuth();
 
   const {
@@ -48,14 +47,16 @@ export default function LoginPage() {
     mutationFn: async (data: LoginFormValues) => {
       await authLogin(data);
     },
+    onSuccess: () => {
+      toast.success("Signed in successfully!");
+    },
     onError: (err: Error) => {
       console.error("%c[Client Auth] ❌ Login error:", "color: #ef4444; font-weight: bold;", err.message);
-      setErrorMessage(err.message);
+      toast.error(err.message || "Failed to sign in");
     }
   });
 
   function onSubmit(values: LoginFormValues) {
-    setErrorMessage(null);
     loginMutation.mutate(values);
   }
 
@@ -104,11 +105,6 @@ export default function LoginPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {errorMessage && (
-                <div className="mb-4 rounded-xl bg-destructive/15 p-3 text-xs text-destructive font-semibold border border-destructive/20">
-                  {errorMessage}
-                </div>
-              )}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label

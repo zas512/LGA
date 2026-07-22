@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -56,12 +57,12 @@ import {
 
 // Validation Schema for creating a User / Associate under the firm
 const createMemberSchema = z.object({
-  email: z.string().email({ message: "Valid email address is required" }),
+  email: z.email({ message: "Valid email address is required" }),
   password: z
     .string()
     .min(8, { message: "Password must be at least 8 characters" }),
   role: z.enum(["ASSOCIATE", "ADMIN"], {
-    errorMap: () => ({ message: "Role must be ASSOCIATE or ADMIN" })
+    error: () => ({ message: "Role must be ASSOCIATE or ADMIN" })
   })
 });
 
@@ -90,13 +91,13 @@ function getBadgeVariant(role: string): "navy" | "secondary" | "outline" {
   return "outline";
 }
 
-export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) {
+export function AssociatesClient({
+  userRole
+}: Readonly<AssociatesClientProps>) {
   const queryClient = useQueryClient();
   const [globalFilter, setGlobalFilter] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<FirmMember | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const canManage = userRole === "OWNER" || userRole === "ADMIN";
 
@@ -112,7 +113,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
     queryFn: async () => {
       console.log("[CLIENT useQuery] Fetching GET /api/associates...");
       const res = await fetch("/api/associates");
-      console.log("[CLIENT useQuery] GET /api/associates response status:", res.status);
+      console.log(
+        "[CLIENT useQuery] GET /api/associates response status:",
+        res.status
+      );
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         console.error("[CLIENT useQuery] Error response:", errorData);
@@ -123,6 +127,12 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
       return data;
     }
   });
+
+  useEffect(() => {
+    if (error) {
+      toast.error(`Error loading firm roster: ${error.message}`);
+    }
+  }, [error]);
 
   // Extract Firm Owner(s) and staff members
   const ownerMember = useMemo(
@@ -152,7 +162,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
 
   const createMutation = useMutation({
     mutationFn: async (values: CreateMemberValues) => {
-      console.log("[CLIENT createMutation] Posting to /api/associates:", values);
+      console.log(
+        "[CLIENT createMutation] Posting to /api/associates:",
+        values
+      );
       const res = await fetch("/api/associates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,19 +178,17 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
       return result;
     },
     onSuccess: () => {
-      setSuccessMessage("Member account created successfully.");
+      toast.success("Member account created successfully.");
       reset();
       setIsCreateOpen(false);
       queryClient.invalidateQueries({ queryKey: ["associates"] });
     },
     onError: (err: Error) => {
-      setErrorMessage(err.message);
+      toast.error(err.message || "Failed to create firm member");
     }
   });
 
   function onSubmit(values: CreateMemberValues) {
-    setErrorMessage(null);
-    setSuccessMessage(null);
     createMutation.mutate(values);
   }
 
@@ -189,9 +200,7 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
         header: "MEMBER EMAIL",
         cell: ({ row }) => {
           const member = row.original;
-          const initials = member.email
-            .substring(0, 2)
-            .toUpperCase();
+          const initials = member.email.substring(0, 2).toUpperCase();
           return (
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
@@ -215,7 +224,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
         cell: ({ row }) => {
           const role = row.original.role;
           return (
-            <Badge variant={getBadgeVariant(role)} className="text-xs font-bold">
+            <Badge
+              variant={getBadgeVariant(role)}
+              className="text-xs font-bold"
+            >
               {role}
             </Badge>
           );
@@ -227,7 +239,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
         cell: ({ row }) => {
           const active = row.original.isActive;
           return (
-            <Badge variant={active ? "emerald" : "destructive"} className="text-[10px]">
+            <Badge
+              variant={active ? "emerald" : "destructive"}
+              className="text-[10px]"
+            >
               {active ? "Active" : "Inactive"}
             </Badge>
           );
@@ -293,13 +308,6 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
 
   return (
     <div className="space-y-6">
-      {/* Query Fetch Error Banner */}
-      {error && (
-        <div className="rounded-xl bg-destructive/15 p-3.5 text-xs text-destructive font-semibold border border-destructive/20">
-          Error loading firm roster: {error.message}
-        </div>
-      )}
-
       {/* ========================================================= */}
       {/* TOP SECTION: FIRM OWNER LEADERSHIP CARD */}
       {/* ========================================================= */}
@@ -317,7 +325,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
                     <CardTitle className="text-xl font-bold">
                       {ownerMember.email}
                     </CardTitle>
-                    <Badge variant="navy" className="gap-1 font-extrabold text-xs">
+                    <Badge
+                      variant="navy"
+                      className="gap-1 font-extrabold text-xs"
+                    >
                       <Crown className="h-3 w-3 text-amber-500" />
                       FIRM OWNER
                     </Badge>
@@ -372,7 +383,9 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
               disabled={isRefetching}
               className="rounded-xl text-xs font-semibold border-border gap-1.5"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin text-primary" : ""}`}
+              />
               <span>Refresh</span>
             </Button>
 
@@ -388,16 +401,6 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
           </div>
         </CardContent>
       </Card>
-
-      {/* Global Success / Error Banners */}
-      {successMessage && (
-        <div className="rounded-xl bg-emerald-500/15 p-3.5 text-xs text-emerald-600 font-semibold border border-emerald-500/20 flex items-center justify-between">
-          <span>{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)} className="text-emerald-700 hover:underline font-bold">
-            Dismiss
-          </button>
-        </div>
-      )}
 
       {/* ========================================================= */}
       {/* ASSOCIATES & STAFF TANSTACK DATA TABLE */}
@@ -508,7 +511,9 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
               Create Associate Account
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Register a new associate or admin under your firm. Mandatory fields are marked with a red star (<span className="text-destructive font-bold">*</span>).
+              Register a new associate or admin under your firm. Mandatory
+              fields are marked with a red star (
+              <span className="text-destructive font-bold">*</span>).
             </DialogDescription>
           </DialogHeader>
 
@@ -521,7 +526,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
             {/* Email Address * */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="email"
+                className="text-xs font-bold text-foreground"
+              >
                 Email Address <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -540,7 +548,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
 
             {/* Password * */}
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="password"
+                className="text-xs font-bold text-foreground"
+              >
                 Account Password <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -559,7 +570,10 @@ export function AssociatesClient({ userRole }: Readonly<AssociatesClientProps>) 
 
             {/* Role * */}
             <div className="space-y-1.5">
-              <Label htmlFor="role" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="role"
+                className="text-xs font-bold text-foreground"
+              >
                 Assigned Role <span className="text-destructive">*</span>
               </Label>
               <select

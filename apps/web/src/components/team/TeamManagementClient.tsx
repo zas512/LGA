@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -58,8 +59,6 @@ function getRoleBadgeVariant(role: string): "navy" | "secondary" | "outline" {
 
 export function TeamManagementClient() {
   const queryClient = useQueryClient();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     data: teamMembers = [],
@@ -105,18 +104,16 @@ export function TeamManagementClient() {
       return result;
     },
     onSuccess: () => {
-      setSuccessMessage("Employee account created successfully.");
+      toast.success("Employee account created successfully.");
       reset();
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
     },
     onError: (err: Error) => {
-      setErrorMessage(err.message);
+      toast.error(err.message || "Failed to create employee");
     }
   });
 
   function onSubmit(values: CreateMemberValues) {
-    setErrorMessage(null);
-    setSuccessMessage(null);
     createMutation.mutate(values);
   }
 
@@ -185,17 +182,6 @@ export function TeamManagementClient() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {errorMessage && (
-            <div className="mb-4 rounded-xl bg-destructive/15 p-3 text-xs text-destructive font-semibold border border-destructive/20">
-              {errorMessage}
-            </div>
-          )}
-          {successMessage && (
-            <div className="mb-4 rounded-xl bg-emerald-500/15 p-3 text-xs text-emerald-600 font-semibold border border-emerald-500/20">
-              {successMessage}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-xs font-semibold">

@@ -1,24 +1,17 @@
 "use client";
-
-import { Search, Bell, Plus } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import Link from "next/link";
 
 interface HeaderProps {
-  userRole?: string;
   title?: string;
   breadcrumb?: string;
 }
 
 export function Header({
-  userRole,
   title = "Dashboard",
   breadcrumb = "Firm / Overview"
 }: Readonly<HeaderProps>) {
-  const canManage = userRole === "OWNER" || userRole === "ADMIN";
-
   return (
     <header className="flex items-center justify-between gap-4 pb-6 pt-2">
       {/* Left: Breadcrumb & Title */}
@@ -52,16 +45,6 @@ export function Header({
           <Bell className="h-4 w-4" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive" />
         </button>
-
-        {/* Quick Action Button */}
-        {canManage && (
-          <Link href="/associates">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold gap-1.5 px-4 h-9 shadow-xs">
-              <Plus className="h-4 w-4 text-primary-foreground" />
-              <span>Add Associate</span>
-            </Button>
-          </Link>
-        )}
       </div>
     </header>
   );

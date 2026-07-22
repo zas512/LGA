@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
 export default function Providers({
@@ -28,7 +29,10 @@ export default function Providers({
         enableSystem
         disableTransitionOnChange
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <Toaster position="top-right" richColors closeButton />
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
