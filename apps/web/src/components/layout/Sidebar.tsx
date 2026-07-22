@@ -8,9 +8,9 @@ import {
   Users,
   Calendar,
   CreditCard,
-  ShieldAlert,
   Sparkles,
-  Scale
+  Scale,
+  Building2
 } from "lucide-react";
 import { LogoutButton } from "../auth/LogoutButton";
 
@@ -51,9 +51,9 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       roles: ["OWNER", "ADMIN"]
     },
     {
-      title: "Platform Admin",
+      title: "Firms Management",
       href: "/platform",
-      icon: ShieldAlert,
+      icon: Building2,
       roles: ["SUPER_ADMIN"]
     }
   ];

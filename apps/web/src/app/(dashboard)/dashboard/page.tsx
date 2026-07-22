@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { DashboardAnalytics } from "@/components/dashboard/DashboardAnalytics";
+import { SuperAdminDashboard } from "@/components/dashboard/SuperAdminDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, DollarSign, ShieldCheck } from "lucide-react";
 
@@ -10,6 +11,10 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (user.role === "SUPER_ADMIN") {
+    return <SuperAdminDashboard />;
   }
 
   return (

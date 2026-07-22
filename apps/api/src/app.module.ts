@@ -12,6 +12,7 @@ import { LeaveModule } from "./modules/hr/leave/leave.module";
 import { FixedExpensesModule } from "./modules/expenses/fixed-expenses/fixed-expenses.module";
 import { ManualExpensesModule } from "./modules/expenses/manual-expenses/manual-expenses.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { FirmsModule } from "./modules/firms/firms.module";
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { PrismaModule } from "./prisma/prisma.module";
     LeaveModule,
     FixedExpensesModule,
     ManualExpensesModule,
-    PrismaModule
+    PrismaModule,
+    FirmsModule
   ],
   controllers: [AppController],
   providers: [
