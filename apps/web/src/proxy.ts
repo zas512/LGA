@@ -14,6 +14,7 @@ const PROTECTED_PREFIXES = [
   "/attendance",
   "/platform"
 ];
+
 const FIRM_SCOPED_PREFIXES = [
   "/dashboard",
   "/associates",
@@ -54,23 +55,48 @@ export async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get(
     AUTH_COOKIE_NAMES.REFRESH_TOKEN
   )?.value;
-
-  const response = NextResponse.next();
-
-  if (!accessToken && refreshToken) {
+  let response = NextResponse.next();
+  const isAccessTokenValid = accessToken
+    ? Boolean(decodeJwt(accessToken))
+    : false;
+  if (!isAccessTokenValid && refreshToken) {
     const tokens = await refreshAuthTokens(refreshToken);
     if (tokens) {
       accessToken = tokens.accessToken;
+      const requestHeaders = new Headers(request.headers);
+      let cookieHeader = request.headers.get("cookie") || "";
+      const updateCookie = (cookieStr: string, name: string, value: string) => {
+        const parts = cookieStr
+          .split(";")
+          .map((p) => p.trim())
+          .filter(Boolean);
+        const filtered = parts.filter((p) => !p.startsWith(`${name}=`));
+        filtered.push(`${name}=${value}`);
+        return filtered.join("; ");
+      };
+      cookieHeader = updateCookie(
+        cookieHeader,
+        AUTH_COOKIE_NAMES.ACCESS_TOKEN,
+        tokens.accessToken
+      );
+      cookieHeader = updateCookie(
+        cookieHeader,
+        AUTH_COOKIE_NAMES.REFRESH_TOKEN,
+        tokens.refreshToken
+      );
+      requestHeaders.set("cookie", cookieHeader);
+      response = NextResponse.next({
+        request: {
+          headers: requestHeaders
+        }
+      });
       attachAuthCookiesToResponse(response, tokens);
     }
   }
-
   const hasToken = Boolean(accessToken || refreshToken);
-
   if (!hasToken && matchesAnyPrefix(pathname, PROTECTED_PREFIXES)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-
   if (hasToken) {
     const user = accessToken ? decodeJwt(accessToken) : null;
     if (pathname === "/login") {
@@ -79,7 +105,6 @@ export async function proxy(request: NextRequest) {
     const areaRedirect = redirectIfWrongArea(request, pathname, user);
     if (areaRedirect) return areaRedirect;
   }
-
   return response;
 }
 

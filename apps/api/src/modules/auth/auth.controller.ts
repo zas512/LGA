@@ -30,7 +30,7 @@ export class AuthController {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         path: "/",
-        maxAge: 15 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000
       });
       response.cookie("refresh_token", result.refreshToken, {
         httpOnly: true,
@@ -55,7 +55,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 15 * 60 * 1000
+      maxAge: 24 * 60 * 60 * 1000
     });
     response.cookie("refresh_token", tokens.refreshToken, {
       httpOnly: true,
@@ -82,7 +82,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 15 * 60 * 1000
+      maxAge: 24 * 60 * 60 * 1000
     });
     response.cookie("refresh_token", tokens.refreshToken, {
       httpOnly: true,

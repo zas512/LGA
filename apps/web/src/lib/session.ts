@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { backendFetch } from "./server-api";
 
 export interface UserSession {
   sub: string;
@@ -19,7 +18,7 @@ export const AUTH_COOKIE_NAMES = {
   REFRESH_TOKEN: "refresh_token"
 } as const;
 
-export const ACCESS_TOKEN_MAX_AGE = 15 * 60; // 15 minutes
+export const ACCESS_TOKEN_MAX_AGE = 24 * 60 * 60; // 1 day
 export const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
 export function getCookieOptions(maxAge: number) {
@@ -48,7 +47,20 @@ export function decodeJwt(token: string): UserSession | null {
         )
         .join("")
     );
-    return JSON.parse(jsonPayload) as UserSession;
+    const payload = JSON.parse(jsonPayload);
+
+    // Check expiration if 'exp' claim is present
+    if (payload && typeof payload.exp === "number") {
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (payload.exp < currentTime) {
+        console.log(
+          `[session:decodeJwt] ⚠️ Token has expired (exp: ${payload.exp}, current: ${currentTime})`
+        );
+        return null;
+      }
+    }
+
+    return payload as UserSession;
   } catch {
     return null;
   }
@@ -57,9 +69,32 @@ export function decodeJwt(token: string): UserSession | null {
 /**
  * Refresh tokens from the NestJS backend
  */
-export async function refreshAuthTokens(refreshToken: string): Promise<AuthTokens | null> {
+function extractCookieValue(
+  cookies: string[],
+  cookieName: string
+): string | null {
+  const regex = new RegExp(`${cookieName}=([^;]+)`);
+
+  for (const cookie of cookies) {
+    if (!cookie.includes(`${cookieName}=`)) {
+      continue;
+    }
+
+    const match = regex.exec(cookie);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+export async function refreshAuthTokens(
+  refreshToken: string
+): Promise<AuthTokens | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
     const res = await fetch(`${baseUrl}/auth/refresh`, {
       method: "POST",
       headers: {
@@ -68,8 +103,39 @@ export async function refreshAuthTokens(refreshToken: string): Promise<AuthToken
       }
     });
 
-    if (!res.ok) return null;
-    return (await res.json()) as AuthTokens;
+    if (!res.ok) {
+      return null;
+    }
+
+    const cookies = res.headers.getSetCookie();
+
+    const accessToken = extractCookieValue(
+      cookies,
+      AUTH_COOKIE_NAMES.ACCESS_TOKEN
+    );
+
+    const newRefreshToken = extractCookieValue(
+      cookies,
+      AUTH_COOKIE_NAMES.REFRESH_TOKEN
+    );
+
+    if (accessToken && newRefreshToken) {
+      return {
+        accessToken,
+        refreshToken: newRefreshToken
+      };
+    }
+
+    const body = await res.json().catch(() => ({}));
+
+    if (body.accessToken && body.refreshToken) {
+      return {
+        accessToken: body.accessToken,
+        refreshToken: body.refreshToken
+      };
+    }
+
+    return null;
   } catch (err) {
     console.error("[TokenManager] Token refresh failed:", err);
     return null;
@@ -109,7 +175,9 @@ export function forwardBackendCookiesToResponse(
   for (const cookieStr of setCookieHeaders) {
     nextResponse.headers.append("Set-Cookie", cookieStr);
     if (cookieStr.includes(`${AUTH_COOKIE_NAMES.ACCESS_TOKEN}=`)) {
-      const match = cookieStr.match(new RegExp(`${AUTH_COOKIE_NAMES.ACCESS_TOKEN}=([^;]+)`));
+      const match = new RegExp(
+        `${AUTH_COOKIE_NAMES.ACCESS_TOKEN}=([^;]+)`
+      ).exec(cookieStr);
       if (match) accessToken = match[1];
     }
   }
@@ -120,7 +188,9 @@ export function forwardBackendCookiesToResponse(
 /**
  * Centralized method to clear auth cookies from a NextResponse
  */
-export function clearAuthCookiesFromResponse(response: NextResponse): NextResponse {
+export function clearAuthCookiesFromResponse(
+  response: NextResponse
+): NextResponse {
   response.cookies.delete(AUTH_COOKIE_NAMES.ACCESS_TOKEN);
   response.cookies.delete(AUTH_COOKIE_NAMES.REFRESH_TOKEN);
   return response;
@@ -134,8 +204,10 @@ export async function getSession(): Promise<{
   accessToken: string | null;
 }> {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get(AUTH_COOKIE_NAMES.ACCESS_TOKEN)?.value ?? null;
-  const refreshToken = cookieStore.get(AUTH_COOKIE_NAMES.REFRESH_TOKEN)?.value ?? null;
+  const accessToken =
+    cookieStore.get(AUTH_COOKIE_NAMES.ACCESS_TOKEN)?.value ?? null;
+  const refreshToken =
+    cookieStore.get(AUTH_COOKIE_NAMES.REFRESH_TOKEN)?.value ?? null;
 
   if (accessToken) {
     const user = decodeJwt(accessToken);
@@ -160,8 +232,11 @@ export async function getSession(): Promise<{
             tokens.refreshToken,
             getCookieOptions(REFRESH_TOKEN_MAX_AGE)
           );
-        } catch {
-          // Safe catch during SSR render
+        } catch (err) {
+          console.warn(
+            "[session:getSession] ⚠️ Failed to set cookies in Server Component (expected during SSR page render):",
+            err instanceof Error ? err.message : String(err)
+          );
         }
         return { user: newUser, accessToken: tokens.accessToken };
       }
