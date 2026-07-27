@@ -148,6 +148,42 @@ export class AuthService {
     });
   }
 
+  async getMe(payload: JwtPayload) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        firmId: true,
+        isActive: true,
+        associateId: true
+      }
+    });
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    let isCheckedIn = false;
+    if (user.associateId) {
+      const activeAttendance = await this.prisma.attendance.findFirst({
+        where: { associateId: user.associateId, checkOut: null }
+      });
+      isCheckedIn = activeAttendance !== null;
+    }
+
+    return {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      firmId: user.firmId,
+      isCheckedIn
+    };
+  }
+
   private async issueTokens(payload: JwtPayload) {
     const accessSecret = this.getEnv("JWT_ACCESS_SECRET");
     const refreshSecret = this.getEnv("JWT_REFRESH_SECRET");

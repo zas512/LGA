@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role: "SUPER_ADMIN" | "OWNER" | "ADMIN" | "ASSOCIATE";
   firmId: string | null;
+  isCheckedIn?: boolean;
 }
 
 export interface LoginResponse {

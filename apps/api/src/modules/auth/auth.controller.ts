@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   UseGuards,
   HttpCode,
@@ -12,12 +13,19 @@ import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenGuard } from "./guards/refresh-token.guard";
+import { AccessTokenGuard } from "./guards/access-token.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import type { JwtPayload } from "./strategies/access-token.strategy";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get("me")
+  @UseGuards(AccessTokenGuard)
+  async me(@CurrentUser() user: JwtPayload) {
+    return this.authService.getMe(user);
+  }
 
   @Post("register")
   async register(

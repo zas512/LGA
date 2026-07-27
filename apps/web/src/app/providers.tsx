@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { AttendanceProvider } from "@/components/attendance/AttendanceContext";
 
 export default function Providers({
   children
@@ -30,8 +31,10 @@ export default function Providers({
         disableTransitionOnChange
       >
         <AuthProvider>
-          {children}
-          <Toaster position="top-right" richColors closeButton />
+          <AttendanceProvider>
+            {children}
+            <Toaster position="top-right" richColors closeButton />
+          </AttendanceProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
