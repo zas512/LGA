@@ -1,10 +1,9 @@
 import { Module } from "@nestjs/common";
-import { FirmsService } from "./firms.service";
 import { FirmsController } from "./firms.controller";
-import { PrismaModule } from "../../prisma/prisma.module";
+import { FirmsService } from "./firms.service";
 
 @Module({
-  imports: [PrismaModule],
+  // PrismaModule is @Global(), so it does not need to be imported here.
   controllers: [FirmsController],
   providers: [FirmsService],
   exports: [FirmsService]

@@ -1,56 +1,60 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Patch,
   Param,
-  UseGuards
+  ParseUUIDPipe,
+  Patch,
+  Post
 } from "@nestjs/common";
-import { AssociatesService } from "./associates.service";
-import { CreateAssociateDto } from "./dto/create-associate.dto";
-import { UpdateAssociateDto } from "./dto/update-associate.dto";
-import { AccessTokenGuard } from "../../auth/guards/access-token.guard";
-import { RolesGuard } from "../../auth/guards/roles.guard";
-import { Roles } from "../../auth/decorators/roles.decorator";
 import { CurrentUser } from "../../auth/decorators/current-user.decorator";
-import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import { Roles } from "../../auth/decorators/roles.decorator";
 import { UserRole } from "../../../generated/prisma/client";
+import {
+  CreateFirmMemberDto,
+  UpdateFirmMemberDto
+} from "../../users/dto/firm-member.dto";
+import type { UserEntity } from "../../users/entities/user.entity";
+import { AssociatesService } from "./associates.service";
 
+/**
+ * Authentication comes from the global AccessTokenGuard; the class-level
+ * `@Roles()` matches the web app, which already hides this area from
+ * associates. Previously `findAll`/`findOne` carried no role requirement, so
+ * any authenticated associate could read the firm's full roster and emails.
+ */
 @Controller("associates")
-@UseGuards(AccessTokenGuard, RolesGuard)
+@Roles(UserRole.OWNER, UserRole.ADMIN)
 export class AssociatesController {
   constructor(private readonly associatesService: AssociatesService) {}
 
   @Post()
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
   create(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: CreateAssociateDto
-  ) {
-    return this.associatesService.create(user.firmId, dto);
+    @CurrentUser("firmId") firmId: string | null,
+    @Body() dto: CreateFirmMemberDto
+  ): Promise<UserEntity> {
+    return this.associatesService.create(firmId, dto);
   }
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload) {
-    return this.associatesService.findAll(user.firmId);
+  findAll(@CurrentUser("firmId") firmId: string | null): Promise<UserEntity[]> {
+    return this.associatesService.findAll(firmId);
   }
 
   @Get(":id")
   findOne(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") id: string
-  ) {
-    return this.associatesService.findOne(user.firmId, id);
+    @CurrentUser("firmId") firmId: string | null,
+    @Param("id", ParseUUIDPipe) id: string
+  ): Promise<UserEntity> {
+    return this.associatesService.findOne(firmId, id);
   }
 
   @Patch(":id")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
   update(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") id: string,
-    @Body() dto: UpdateAssociateDto
-  ) {
-    return this.associatesService.update(user.firmId, id, dto);
+    @CurrentUser("firmId") firmId: string | null,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateFirmMemberDto
+  ): Promise<UserEntity> {
+    return this.associatesService.update(firmId, id, dto);
   }
 }
