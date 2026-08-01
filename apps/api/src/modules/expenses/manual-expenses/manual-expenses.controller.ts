@@ -2,7 +2,11 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { ManualExpensesService } from './manual-expenses.service';
 import { CreateManualExpenseDto } from './dto/create-manual-expense.dto';
 import { UpdateManualExpenseDto } from './dto/update-manual-expense.dto';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { UserRole } from '../../../generated/prisma/client';
 
+// TODO: unimplemented Nest CLI scaffold — see leave.controller.ts.
+@Roles(UserRole.OWNER, UserRole.ADMIN)
 @Controller('manual-expenses')
 export class ManualExpensesController {
   constructor(private readonly manualExpensesService: ManualExpensesService) {}

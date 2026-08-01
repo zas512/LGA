@@ -1,154 +1,127 @@
 import {
-  Injectable,
-  UnauthorizedException,
+  BadRequestException,
   ConflictException,
   ForbiddenException,
-  BadRequestException
+  Injectable,
+  UnauthorizedException
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { SignOptions } from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../../prisma/prisma.service";
+import { toEntity } from "../../common/serialization/serialize";
+import type { EnvironmentVariables } from "../../config/env.validation";
+import { UserRole } from "../../generated/prisma/client";
+import { BCRYPT_ROUNDS } from "./auth.constants";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { JwtPayload } from "./strategies/access-token.strategy";
-import { UserRole } from "../../generated/prisma/client";
+import { AuthUserEntity } from "./entities/auth.entity";
+import type { JwtPayload } from "./strategies/access-token.strategy";
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService<EnvironmentVariables, true>
   ) {}
 
-  async register(dto: RegisterDto) {
-    if (dto.role === UserRole.ADMIN || dto.role === UserRole.ASSOCIATE) {
+  /**
+   * Self-registration creates a firm OWNER and their firm, nothing else.
+   *
+   * ADMIN/ASSOCIATE accounts are created by a firm administrator, and
+   * SUPER_ADMIN accounts are provisioned out of band (see `prisma/seed.ts`) —
+   * the previous implementation fell through to a SUPER_ADMIN branch, so any
+   * unauthenticated caller could mint a platform administrator.
+   */
+  async register(dto: RegisterDto): Promise<AuthTokens> {
+    if (dto.role !== UserRole.OWNER) {
       throw new ForbiddenException(
-        "Self-registration is disabled for ADMIN and ASSOCIATE roles. Firm administrators must create team member accounts."
+        "Self-registration is only available for firm owners. Other accounts must be created by an administrator."
+      );
+    }
+    if (!dto.firmName) {
+      throw new BadRequestException(
+        "firmName is required when registering a firm owner"
       );
     }
 
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email }
+      where: { email: dto.email },
+      select: { id: true }
     });
     if (existing) {
       throw new ConflictException("A user with this email already exists");
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const firmName = dto.firmName;
 
-    if (dto.role === UserRole.OWNER) {
-      if (!dto.firmName) {
-        throw new BadRequestException(
-          "firmName is required when registering a Firm Owner"
-        );
-      }
-
-      const result = await this.prisma.$transaction(async (tx) => {
-        const firm = await tx.firm.create({
-          data: { name: dto.firmName! }
-        });
-        const user = await tx.user.create({
-          data: {
-            email: dto.email,
-            passwordHash,
-            role: UserRole.OWNER,
-            firmId: firm.id
-          }
-        });
-        return user;
+    const user = await this.prisma.$transaction(async (tx) => {
+      const firm = await tx.firm.create({ data: { name: firmName } });
+      return tx.user.create({
+        data: {
+          email: dto.email,
+          name: dto.name ?? null,
+          passwordHash,
+          role: UserRole.OWNER,
+          firmId: firm.id
+        }
       });
-
-      const tokens = await this.issueTokens({
-        sub: result.id,
-        email: result.email,
-        role: result.role,
-        firmId: result.firmId
-      });
-      await this.saveRefreshTokenHash(result.id, tokens.refreshToken);
-      return tokens;
-    }
-
-    // SUPER_ADMIN
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        passwordHash,
-        role: UserRole.SUPER_ADMIN,
-        firmId: null
-      }
     });
 
-    const tokens = await this.issueTokens({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      firmId: user.firmId
-    });
-    await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
-    return tokens;
+    return this.issueAndPersistTokens(user);
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<AuthTokens> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email }
     });
-    console.log("user in backend: ", user);
-    if (!user?.isActive) {
+
+    // Compare against a throwaway hash for unknown accounts so the response
+    // time does not reveal whether an email is registered.
+    const passwordMatches = user
+      ? await bcrypt.compare(dto.password, user.passwordHash)
+      : await bcrypt.compare(dto.password, DUMMY_HASH);
+
+    if (!user || !user.isActive || !passwordMatches) {
       throw new UnauthorizedException("Invalid credentials");
     }
-    const passwordMatches = await bcrypt.compare(
-      dto.password,
-      user.passwordHash
-    );
-    if (!passwordMatches) {
-      throw new UnauthorizedException("Invalid credentials");
-    }
-    const tokens = await this.issueTokens({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      firmId: user.firmId
-    });
-    await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
-    return tokens;
+
+    return this.issueAndPersistTokens(user);
   }
 
-  async refresh(userId: string, refreshToken: string) {
+  async refresh(userId: string, refreshToken: string): Promise<AuthTokens> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
+    if (!user?.isActive || !user.refreshTokenHash) {
       throw new UnauthorizedException("Access denied");
     }
-    const storedRefreshTokenHash = (user as { refreshTokenHash?: unknown })
-      .refreshTokenHash;
-    if (typeof storedRefreshTokenHash !== "string" || !storedRefreshTokenHash) {
-      throw new UnauthorizedException("Access denied");
-    }
+
     const tokenMatches = await bcrypt.compare(
       refreshToken,
-      storedRefreshTokenHash
+      user.refreshTokenHash
     );
     if (!tokenMatches) {
       throw new UnauthorizedException("Access denied");
     }
-    const tokens = await this.issueTokens({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      firmId: user.firmId
-    });
-    await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
-    return tokens;
+
+    return this.issueAndPersistTokens(user);
   }
 
-  async logout(userId: string) {
+  async logout(userId: string): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshTokenHash: null }
     });
   }
 
-  async getMe(payload: JwtPayload) {
+  async getMe(payload: JwtPayload): Promise<AuthUserEntity> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -162,67 +135,76 @@ export class AuthService {
       }
     });
 
-    if (!user) {
+    if (!user?.isActive) {
       throw new UnauthorizedException();
     }
 
-    let isCheckedIn = false;
-    if (user.associateId) {
-      const activeAttendance = await this.prisma.attendance.findFirst({
-        where: { associateId: user.associateId, checkOut: null }
-      });
-      isCheckedIn = activeAttendance !== null;
-    }
+    const isCheckedIn = user.associateId
+      ? (await this.prisma.attendance.count({
+          where: { associateId: user.associateId, checkOut: null }
+        })) > 0
+      : false;
 
-    return {
+    return toEntity(AuthUserEntity, {
       sub: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
       firmId: user.firmId,
       isCheckedIn
-    };
+    });
   }
 
-  private async issueTokens(payload: JwtPayload) {
-    const accessSecret = this.getEnv("JWT_ACCESS_SECRET");
-    const refreshSecret = this.getEnv("JWT_REFRESH_SECRET");
-    const accessExpiresIn = this.getJwtExpiresIn("JWT_ACCESS_EXPIRES_IN");
-    const refreshExpiresIn = this.getJwtExpiresIn("JWT_REFRESH_EXPIRES_IN");
+  private async issueAndPersistTokens(user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    firmId: string | null;
+  }): Promise<AuthTokens> {
+    const tokens = await this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      firmId: user.firmId
+    });
+    await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
+    return tokens;
+  }
+
+  private async issueTokens(payload: JwtPayload): Promise<AuthTokens> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: accessSecret,
-        expiresIn: accessExpiresIn
+        secret: this.config.get("JWT_ACCESS_SECRET", { infer: true }),
+        expiresIn: this.expiresIn("JWT_ACCESS_EXPIRES_IN")
       }),
       this.jwtService.signAsync(payload, {
-        secret: refreshSecret,
-        expiresIn: refreshExpiresIn
+        secret: this.config.get("JWT_REFRESH_SECRET", { infer: true }),
+        expiresIn: this.expiresIn("JWT_REFRESH_EXPIRES_IN")
       })
     ]);
     return { accessToken, refreshToken };
   }
 
-  private getEnv(key: string): string {
-    const value = process.env[key];
-    if (!value) {
-      throw new UnauthorizedException(`Missing environment variable: ${key}`);
-    }
-    return value;
-  }
-
-  private getJwtExpiresIn(key: string): NonNullable<SignOptions["expiresIn"]> {
-    const value = this.getEnv(key);
-    if (/^\d+$/.test(value)) {
-      return Number(value);
-    }
-    return value as NonNullable<SignOptions["expiresIn"]>;
+  private expiresIn(
+    key: "JWT_ACCESS_EXPIRES_IN" | "JWT_REFRESH_EXPIRES_IN"
+  ): NonNullable<SignOptions["expiresIn"]> {
+    const value = this.config.get(key, { infer: true });
+    // "3600" means seconds, "15m" is a duration string; jsonwebtoken needs the
+    // former as a number.
+    return /^\d+$/.test(value)
+      ? Number(value)
+      : (value as NonNullable<SignOptions["expiresIn"]>);
   }
 
   private async saveRefreshTokenHash(userId: string, refreshToken: string) {
-    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    const refreshTokenHash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshTokenHash }
     });
   }
 }
+
+/** bcrypt hash of a value no user can supply; only used to equalise timing. */
+const DUMMY_HASH =
+  "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";

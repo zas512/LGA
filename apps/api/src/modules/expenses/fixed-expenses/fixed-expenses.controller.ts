@@ -2,7 +2,11 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { FixedExpensesService } from './fixed-expenses.service';
 import { CreateFixedExpenseDto } from './dto/create-fixed-expense.dto';
 import { UpdateFixedExpenseDto } from './dto/update-fixed-expense.dto';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { UserRole } from '../../../generated/prisma/client';
 
+// TODO: unimplemented Nest CLI scaffold — see leave.controller.ts.
+@Roles(UserRole.OWNER, UserRole.ADMIN)
 @Controller('fixed-expenses')
 export class FixedExpensesController {
   constructor(private readonly fixedExpensesService: FixedExpensesService) {}

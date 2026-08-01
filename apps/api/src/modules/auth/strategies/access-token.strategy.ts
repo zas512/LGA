@@ -1,28 +1,38 @@
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
+import type { UserRole } from "../../../generated/prisma/client";
+import type { EnvironmentVariables } from "../../../config/env.validation";
+import { ACCESS_TOKEN_COOKIE } from "../auth.constants";
+import { cookieExtractor } from "../extractors/cookie.extractor";
 
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
+  role: UserRole;
   firmId: string | null;
 }
+
+export const ACCESS_TOKEN_STRATEGY = "jwt-access";
 
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(
   Strategy,
-  "jwt-access"
+  ACCESS_TOKEN_STRATEGY
 ) {
-  constructor() {
+  constructor(config: ConfigService<EnvironmentVariables, true>) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        cookieExtractor(ACCESS_TOKEN_COOKIE)
+      ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_ACCESS_SECRET!
+      secretOrKey: config.get("JWT_ACCESS_SECRET", { infer: true })
     });
   }
 
-  validate(payload: JwtPayload) {
+  validate(payload: JwtPayload): JwtPayload {
     return payload;
   }
 }

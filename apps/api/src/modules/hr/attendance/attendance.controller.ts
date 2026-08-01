@@ -1,58 +1,71 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { AttendanceService } from './attendance.service';
-import { AccessTokenGuard } from '../../auth/guards/access-token.guard';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import type { JwtPayload } from '../../auth/strategies/access-token.strategy';
-import { AttendanceStatus } from '../../../generated/prisma/client';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post
+} from "@nestjs/common";
+import { CurrentUser } from "../../auth/decorators/current-user.decorator";
+import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import { AttendanceService } from "./attendance.service";
+import { CheckInDto, CreateAttendanceDto } from "./dto/create-attendance.dto";
+import { UpdateAttendanceDto } from "./dto/update-attendance.dto";
+import { AttendanceEntity } from "./entities/attendance.entity";
 
-@Controller('attendance')
-@UseGuards(AccessTokenGuard)
+/**
+ * Every route is scoped to the caller's own associate record, so no `@Roles()`
+ * requirement is needed beyond the global authentication guard.
+ */
+@Controller("attendance")
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload) {
+  findAll(@CurrentUser() user: JwtPayload): Promise<AttendanceEntity[]> {
     return this.attendanceService.findAllForUser(user);
   }
 
-  @Post('check-in')
+  @Post("check-in")
   checkIn(
     @CurrentUser() user: JwtPayload,
-    @Body('notes') notes?: string
-  ) {
-    return this.attendanceService.checkIn(user, notes);
+    @Body() dto: CheckInDto
+  ): Promise<AttendanceEntity> {
+    return this.attendanceService.checkIn(user, dto);
   }
 
-  @Post('check-out')
+  @Post("check-out")
   checkOut(
     @CurrentUser() user: JwtPayload,
-    @Body('notes') notes?: string
-  ) {
-    return this.attendanceService.checkOut(user, notes);
+    @Body() dto: CheckInDto
+  ): Promise<AttendanceEntity> {
+    return this.attendanceService.checkOut(user, dto);
   }
 
-  @Post('manual')
+  @Post("manual")
   createManual(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { date: string; checkIn: string; checkOut: string; status: AttendanceStatus; notes?: string }
-  ) {
-    return this.attendanceService.createManual(user, body);
+    @Body() dto: CreateAttendanceDto
+  ): Promise<AttendanceEntity> {
+    return this.attendanceService.createManual(user, dto);
   }
 
-  @Patch(':id')
+  @Patch(":id")
   update(
     @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-    @Body() body: { date?: string; checkIn?: string; checkOut?: string; status?: AttendanceStatus; notes?: string }
-  ) {
-    return this.attendanceService.update(user, id, body);
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAttendanceDto
+  ): Promise<AttendanceEntity> {
+    return this.attendanceService.update(user, id, dto);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   remove(
     @CurrentUser() user: JwtPayload,
-    @Param('id') id: string
-  ) {
+    @Param("id", ParseUUIDPipe) id: string
+  ): Promise<AttendanceEntity> {
     return this.attendanceService.remove(user, id);
   }
 }

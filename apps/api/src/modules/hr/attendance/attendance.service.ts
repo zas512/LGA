@@ -1,197 +1,219 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException
+} from "@nestjs/common";
 import { PrismaService } from "../../../prisma/prisma.service";
-import { JwtPayload } from "../../auth/strategies/access-token.strategy";
-import { AttendanceStatus, AttendanceSource } from "../../../generated/prisma/client";
+import { toEntities, toEntity } from "../../../common/serialization/serialize";
+import { UsersService } from "../../users/users.service";
+import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import type { Prisma } from "../../../generated/prisma/client";
+import {
+  AttendanceSource,
+  AttendanceStatus
+} from "../../../generated/prisma/client";
+import { CheckInDto, CreateAttendanceDto } from "./dto/create-attendance.dto";
+import { UpdateAttendanceDto } from "./dto/update-attendance.dto";
+import { AttendanceEntity } from "./entities/attendance.entity";
+
+/** A shift shorter than this is recorded as a half day. */
+const HALF_DAY_THRESHOLD_HOURS = 4;
+
+/**
+ * `Attendance.date` is a `@db.Date` column, so it needs an exact UTC midnight.
+ * Building it from local components (`new Date(y, m, d)`) shifted the stored
+ * day by one for anyone not on UTC.
+ */
+function toDateOnly(value: Date): Date {
+  return new Date(
+    Date.UTC(value.getFullYear(), value.getMonth(), value.getDate())
+  );
+}
+
+function parseDateOnly(value: string): Date {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Invalid date: ${value}`);
+  }
+  return date;
+}
+
+function statusForShift(
+  checkIn: Date | null,
+  checkOut: Date | null
+): AttendanceStatus | null {
+  if (!checkIn || !checkOut) {
+    return null;
+  }
+  const hours = (checkOut.getTime() - checkIn.getTime()) / 3_600_000;
+  return hours < HALF_DAY_THRESHOLD_HOURS
+    ? AttendanceStatus.HALF_DAY
+    : AttendanceStatus.PRESENT;
+}
 
 @Injectable()
 export class AttendanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly users: UsersService
+  ) {}
 
-  // Helper to resolve or lazy-create associate ID for a user
-  private async getOrCreateAssociateId(user: JwtPayload): Promise<string> {
-    const userDb = await this.prisma.user.findUnique({
-      where: { id: user.sub },
-      select: { id: true, associateId: true, email: true, name: true, firmId: true }
-    });
-
-    if (!userDb) {
-      throw new NotFoundException("User not found");
-    }
-
-    if (userDb.associateId) {
-      return userDb.associateId;
-    }
-
-    if (!userDb.firmId) {
-      throw new BadRequestException("User must belong to a firm to track attendance");
-    }
-
-    // Lazy create Associate record
-    const newAssociate = await this.prisma.associate.create({
-      data: {
-        firmId: userDb.firmId,
-        fullName: userDb.name || userDb.email.split('@')[0],
-        email: userDb.email,
-        joiningDate: new Date(),
-        salary: 0,
-        status: 'ACTIVE'
-      }
-    });
-
-    // Link back to user
-    await this.prisma.user.update({
-      where: { id: userDb.id },
-      data: { associateId: newAssociate.id }
-    });
-
-    return newAssociate.id;
-  }
-
-  // Get all attendance records for the active user
-  async findAllForUser(user: JwtPayload) {
-    const associateId = await this.getOrCreateAssociateId(user);
-    return this.prisma.attendance.findMany({
+  async findAllForUser(user: JwtPayload): Promise<AttendanceEntity[]> {
+    const associateId = await this.users.resolveAssociateId(user.sub);
+    const records = await this.prisma.attendance.findMany({
       where: { associateId },
-      orderBy: [
-        { date: 'desc' },
-        { checkIn: 'desc' }
-      ]
+      orderBy: [{ date: "desc" }, { checkIn: "desc" }]
     });
+    return toEntities(AttendanceEntity, records);
   }
 
-  // Perform Check In
-  async checkIn(user: JwtPayload, notes?: string) {
-    const associateId = await this.getOrCreateAssociateId(user);
-    
-    // Check if there is an active check-in (checkOut is null)
-    const active = await this.prisma.attendance.findFirst({
-      where: { associateId, checkOut: null }
+  async checkIn(user: JwtPayload, dto: CheckInDto): Promise<AttendanceEntity> {
+    const associateId = await this.users.resolveAssociateId(user.sub);
+    const now = new Date();
+    const date = toDateOnly(now);
+
+    // The schema allows one row per associate per day. Looking only for an
+    // *open* shift was not enough: checking in again after checking out hit the
+    // unique constraint and surfaced as an opaque 500.
+    const today = await this.prisma.attendance.findUnique({
+      where: { associateId_date: { associateId, date } },
+      select: { id: true, checkOut: true }
     });
 
-    if (active) {
-      throw new BadRequestException("You are already checked in!");
+    if (today) {
+      throw today.checkOut === null
+        ? new BadRequestException("You are already checked in!")
+        : new ConflictException(
+            "Attendance for today has already been recorded. Edit the existing record instead."
+          );
     }
 
-    const now = new Date();
-    // Use date part in local server timezone
-    const dateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    return this.prisma.attendance.create({
+    const record = await this.prisma.attendance.create({
       data: {
         associateId,
-        date: dateOnly,
+        date,
         checkIn: now,
         checkOut: null,
         status: AttendanceStatus.PRESENT,
         source: AttendanceSource.REMOTE_CHECKIN,
-        notes: notes || "Web Portal Check-In"
+        notes: dto.notes ?? "Web Portal Check-In"
       }
     });
+    return toEntity(AttendanceEntity, record);
   }
 
-  // Perform Check Out
-  async checkOut(user: JwtPayload, notes?: string) {
-    const associateId = await this.getOrCreateAssociateId(user);
+  async checkOut(user: JwtPayload, dto: CheckInDto): Promise<AttendanceEntity> {
+    const associateId = await this.users.resolveAssociateId(user.sub);
 
-    // Find active check-in
-    const active = await this.prisma.attendance.findFirst({
-      where: { associateId, checkOut: null }
+    const open = await this.prisma.attendance.findFirst({
+      where: { associateId, checkOut: null },
+      orderBy: { date: "desc" }
     });
-
-    if (!active) {
+    if (!open) {
       throw new BadRequestException("You are not checked in!");
     }
 
     const now = new Date();
-    const durationHrs = active.checkIn ? (now.getTime() - new Date(active.checkIn).getTime()) / (1000 * 60 * 60) : 0;
-    
-    // Determine status: less than 4 hours is half day
-    let status: AttendanceStatus = AttendanceStatus.PRESENT;
-    if (durationHrs < 4) {
-      status = AttendanceStatus.HALF_DAY;
-    }
-
-    return this.prisma.attendance.update({
-      where: { id: active.id },
+    const record = await this.prisma.attendance.update({
+      where: { id: open.id },
       data: {
         checkOut: now,
-        status,
-        notes: notes ? `${active.notes || ""}\nCheckout: ${notes}`.trim() : active.notes
+        status: statusForShift(open.checkIn, now) ?? open.status,
+        notes: dto.notes
+          ? `${open.notes ?? ""}\nCheckout: ${dto.notes}`.trim()
+          : open.notes
       }
     });
+    return toEntity(AttendanceEntity, record);
   }
 
-  // Create manual attendance (past record)
-  async createManual(user: JwtPayload, body: { date: string; checkIn: string; checkOut: string; status: AttendanceStatus; notes?: string }) {
-    const associateId = await this.getOrCreateAssociateId(user);
-    
-    const checkInDate = new Date(body.checkIn);
-    const checkOutDate = new Date(body.checkOut);
-    const dateOnly = new Date(body.date + "T00:00:00");
+  async createManual(
+    user: JwtPayload,
+    dto: CreateAttendanceDto
+  ): Promise<AttendanceEntity> {
+    const associateId = await this.users.resolveAssociateId(user.sub);
+    const checkIn = new Date(dto.checkIn);
+    const checkOut = new Date(dto.checkOut);
 
-    return this.prisma.attendance.create({
+    if (checkOut.getTime() < checkIn.getTime()) {
+      throw new BadRequestException("checkOut must not precede checkIn");
+    }
+
+    const record = await this.prisma.attendance.create({
       data: {
         associateId,
-        date: dateOnly,
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        status: body.status,
+        date: parseDateOnly(dto.date),
+        checkIn,
+        checkOut,
+        status: dto.status,
         source: AttendanceSource.MANUAL_ADMIN,
-        notes: body.notes || "Manual Entry"
+        notes: dto.notes ?? "Manual Entry"
       }
     });
+    return toEntity(AttendanceEntity, record);
   }
 
-  // Update an attendance record
-  async update(user: JwtPayload, id: string, body: { date?: string; checkIn?: string; checkOut?: string; status?: AttendanceStatus; notes?: string }) {
-    const associateId = await this.getOrCreateAssociateId(user);
+  async update(
+    user: JwtPayload,
+    id: string,
+    dto: UpdateAttendanceDto
+  ): Promise<AttendanceEntity> {
+    const record = await this.findOwnRecord(user, id);
 
-    // Find the record to verify ownership
-    const record = await this.prisma.attendance.findUnique({
-      where: { id }
-    });
-
-    if (!record || record.associateId !== associateId) {
-      throw new NotFoundException("Attendance record not found");
+    const data: Prisma.AttendanceUpdateInput = {};
+    if (dto.date) {
+      data.date = parseDateOnly(dto.date);
+    }
+    if (dto.checkIn) {
+      data.checkIn = new Date(dto.checkIn);
+    }
+    if (dto.checkOut !== undefined) {
+      // An explicit null reopens the shift.
+      data.checkOut = dto.checkOut === null ? null : new Date(dto.checkOut);
+    }
+    if (dto.notes !== undefined) {
+      data.notes = dto.notes;
     }
 
-    const data: any = {};
-    if (body.date) data.date = new Date(body.date + "T00:00:00");
-    if (body.checkIn) data.checkIn = new Date(body.checkIn);
-    if (body.checkOut) data.checkOut = new Date(body.checkOut);
-    if (body.status) data.status = body.status;
-    if (body.notes !== undefined) data.notes = body.notes;
+    const checkIn = dto.checkIn ? new Date(dto.checkIn) : record.checkIn;
+    const checkOut =
+      dto.checkOut === undefined
+        ? record.checkOut
+        : dto.checkOut === null
+          ? null
+          : new Date(dto.checkOut);
 
-    // Auto update status if checkIn and checkOut are updated
-    if (data.checkIn || data.checkOut) {
-      const inTime = data.checkIn ? data.checkIn.getTime() : (record.checkIn ? new Date(record.checkIn).getTime() : 0);
-      const outTime = data.checkOut ? data.checkOut.getTime() : (record.checkOut ? new Date(record.checkOut).getTime() : null);
-      if (outTime) {
-        const hours = (outTime - inTime) / (1000 * 60 * 60);
-        data.status = hours < 4 ? AttendanceStatus.HALF_DAY : AttendanceStatus.PRESENT;
-      }
+    if (checkIn && checkOut && checkOut.getTime() < checkIn.getTime()) {
+      throw new BadRequestException("checkOut must not precede checkIn");
     }
 
-    return this.prisma.attendance.update({
-      where: { id },
-      data
-    });
+    // An explicit status wins; otherwise derive it from the resulting shift.
+    data.status =
+      dto.status ?? statusForShift(checkIn, checkOut) ?? record.status;
+
+    const updated = await this.prisma.attendance.update({ where: { id }, data });
+    return toEntity(AttendanceEntity, updated);
   }
 
-  // Delete an attendance record
-  async remove(user: JwtPayload, id: string) {
-    const associateId = await this.getOrCreateAssociateId(user);
+  async remove(user: JwtPayload, id: string): Promise<AttendanceEntity> {
+    await this.findOwnRecord(user, id);
+    const deleted = await this.prisma.attendance.delete({ where: { id } });
+    return toEntity(AttendanceEntity, deleted);
+  }
 
-    const record = await this.prisma.attendance.findUnique({
-      where: { id }
+  /**
+   * Records are addressable by uuid, so every mutation re-checks that the row
+   * belongs to the caller's associate before touching it.
+   */
+  private async findOwnRecord(user: JwtPayload, id: string) {
+    const associateId = await this.users.resolveAssociateId(user.sub);
+    const record = await this.prisma.attendance.findFirst({
+      where: { id, associateId }
     });
-
-    if (!record || record.associateId !== associateId) {
+    if (!record) {
       throw new NotFoundException("Attendance record not found");
     }
-
-    return this.prisma.attendance.delete({
-      where: { id }
-    });
+    return record;
   }
 }

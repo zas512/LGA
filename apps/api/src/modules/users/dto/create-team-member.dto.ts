@@ -1,14 +1,9 @@
-import { IsEmail, IsEnum, IsString, MinLength } from "class-validator";
-import { UserRole } from "../../../generated/prisma/client";
-
-export class CreateTeamMemberDto {
-  @IsEmail()
-  email!: string;
-
-  @IsString()
-  @MinLength(8)
-  password!: string;
-
-  @IsEnum(UserRole)
-  role!: UserRole;
-}
+/**
+ * Retained as the historical name for this module's create payload; the
+ * definition now lives with the shared firm-member DTOs so `/users` and
+ * `/associates` validate identically.
+ */
+export {
+  CreateFirmMemberDto as CreateTeamMemberDto,
+  UpdateFirmMemberDto as UpdateTeamMemberDto
+} from "./firm-member.dto";
