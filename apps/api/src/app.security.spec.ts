@@ -79,7 +79,9 @@ describe("API security wiring", () => {
       "/api/leave",
       "/api/fixed-expenses",
       "/api/manual-expenses",
-      "/api/auth/me"
+      "/api/auth/me",
+      "/api/matters",
+      "/api/tasks"
     ])("rejects %s without a token", async (url) => {
       await request(app.getHttpServer()).get(url).expect(401);
     });
@@ -115,6 +117,25 @@ describe("API security wiring", () => {
     it("keeps an associate out of the firm roster", async () => {
       await request(app.getHttpServer())
         .get("/api/associates")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ASSOCIATE)}`)
+        .expect(403);
+    });
+
+    it("keeps an associate out of creating a matter", async () => {
+      await request(app.getHttpServer())
+        .post("/api/matters")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ASSOCIATE)}`)
+        .send({
+          firmCaseNumber: "LGA-001",
+          caseType: "CIVIL",
+          clientName: "Test Client"
+        })
+        .expect(403);
+    });
+
+    it("keeps an associate out of getting matter summary reports", async () => {
+      await request(app.getHttpServer())
+        .get("/api/matters/00000000-0000-0000-0000-000000000001/summary-report")
         .set("Authorization", `Bearer ${tokenFor(UserRole.ASSOCIATE)}`)
         .expect(403);
     });

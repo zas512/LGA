@@ -18,10 +18,15 @@ model Firm {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users      User[]
-  associates Associate[]
-  leaveTypes LeaveType[]
-  expenses   Expense[]
+  users       User[]
+  associates  Associate[]
+  leaveTypes  LeaveType[]
+  expenses    Expense[]
+  matters     Matter[]
+  parties     Party[]
+  tasks       Task[]
+  courtStages CourtStage[]
+  auditLogs   AuditLog[]
 }
 
 // ==========================================
@@ -78,14 +83,19 @@ model Associate {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
-  firm              Firm           @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  reportingManager  Associate?     @relation("ManagerHierarchy", fields: [reportingManagerId], references: [id])
-  directReports     Associate[]    @relation("ManagerHierarchy")
-  user              User?
-  attendanceRecords Attendance[]
-  leaveRequests     LeaveRequest[]
-  leaveBalances     LeaveBalance[]
-  expenses          Expense[]      @relation("ExpenseForAssociate")
+  firm               Firm              @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  reportingManager   Associate?        @relation("ManagerHierarchy", fields: [reportingManagerId], references: [id])
+  directReports      Associate[]       @relation("ManagerHierarchy")
+  user               User?
+  attendanceRecords  Attendance[]
+  leaveRequests      LeaveRequest[]
+  leaveBalances      LeaveBalance[]
+  expenses           Expense[]         @relation("ExpenseForAssociate")
+  matters            MatterAssociate[]
+  hearingAttendances HearingAttendee[]
+  tasksAssigned      Task[]            @relation("TaskAssignee")
+  tasksCreated       Task[]            @relation("TaskAssigner")
+  taskNotes          TaskNote[]
 }
 
 enum EmploymentType {
@@ -239,4 +249,308 @@ enum BillingCycle {
   MONTHLY
   QUARTERLY
   ANNUALLY
+}
+
+// ==========================================
+// CASE MANAGEMENT: LOOKUP DATA
+// ==========================================
+
+enum CaseType {
+  CIVIL
+  CRIMINAL
+  WRIT
+  FAMILY
+  SERVICE
+  CORPORATE
+  TAXATION
+}
+
+model CourtStage {
+  id            String   @id @default(uuid())
+  firmId        String?  // null = system default, set = firm-specific custom stage
+  caseType      CaseType
+  name          String   // e.g. "Framing of Issues (Tanqeehat)"
+  sequenceOrder Int
+  isDefault     Boolean  @default(true)
+
+  matters Matter[]
+  firm    Firm?    @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([caseType, sequenceOrder])
+}
+
+// ==========================================
+// MATTER (CASE)
+// ==========================================
+
+enum MatterStatus {
+  ACTIVE
+  ARCHIVED
+  DECIDED
+  CLOSED
+}
+
+model Matter {
+  id                String       @id @default(uuid())
+  firmId            String
+  firmCaseNumber    String       // internal firm reference
+  courtCaseNumber   String?      // e.g. "Civil Suit No. 124/2024"
+  cnr               String?      // Case Number Record
+  caseType          CaseType
+  court             String?      // "District & Sessions Court Islamabad"
+  bench             String?      // "Lahore High Court (Rawalpindi Bench)"
+  presidingJudge    String?
+  currentStageId    String?
+  status            MatterStatus @default(ACTIVE)
+  filingDate        DateTime?
+  clientName        String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  firm         Firm              @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  currentStage CourtStage?       @relation(fields: [currentStageId], references: [id])
+  associates   MatterAssociate[]
+  parties      MatterParty[]
+  hearings     Hearing[]
+  tasks        Task[]
+  documents    CaseDocument[]
+
+  @@index([firmId, status])
+}
+
+model MatterAssociate {
+  id          String  @id @default(uuid())
+  matterId    String
+  associateId String
+  role        String? // "Lead Counsel", "Associate", "Co-Counsel"
+
+  matter    Matter    @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  associate Associate @relation(fields: [associateId], references: [id])
+
+  @@unique([matterId, associateId])
+}
+
+// ==========================================
+// PARTIES
+// ==========================================
+
+enum PartyRole {
+  PLAINTIFF
+  DEFENDANT
+  PETITIONER
+  RESPONDENT
+  ACCUSED
+  COMPLAINANT
+  OPPOSING_COUNSEL
+  CO_COUNSEL
+  WITNESS
+  COURT_CLERK
+}
+
+model Party {
+  id         String  @id @default(uuid())
+  firmId     String
+  name       String
+  phone      String?
+  email      String?
+  isExternal Boolean @default(true)
+
+  firm        Firm          @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  matterLinks MatterParty[]
+}
+
+model MatterParty {
+  id        String    @id @default(uuid())
+  matterId  String
+  partyId   String
+  partyRole PartyRole
+
+  matter Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  party  Party  @relation(fields: [partyId], references: [id])
+
+  @@unique([matterId, partyId, partyRole])
+}
+
+// ==========================================
+// HEARINGS (Tareekh-e-Pesh / Legal Ledger)
+// ==========================================
+
+enum HearingStatus {
+  SCHEDULED
+  HELD
+  ADJOURNED
+  SINE_DIE
+  DECIDED
+}
+
+model Hearing {
+  id                 String        @id @default(uuid())
+  matterId           String
+  hearingDate        DateTime
+  purpose            String
+  presidingJudge     String?
+  proceedingsSummary String?
+  orderSheetUrl      String?
+  nextDate           DateTime?
+  nextPurpose        String?
+  status             HearingStatus @default(SCHEDULED)
+  createdById        String
+  createdAt          DateTime      @default(now())
+
+  matter    Matter            @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  attendees HearingAttendee[]
+  tasks     Task[]
+
+  @@index([matterId, hearingDate(sort: Desc)])
+}
+
+model HearingAttendee {
+  id          String @id @default(uuid())
+  hearingId   String
+  associateId String
+
+  hearing   Hearing   @relation(fields: [hearingId], references: [id], onDelete: Cascade)
+  associate Associate @relation(fields: [associateId], references: [id])
+
+  @@unique([hearingId, associateId])
+}
+
+// ==========================================
+// TASKS
+// ==========================================
+
+enum TaskType {
+  DOCUMENT_FILING
+  PRINTING_BINDING
+  CLIENT_FOLLOWUP
+  WITNESS_BRIEFING
+  LEGAL_RESEARCH
+  OTHER
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  UNDER_REVIEW
+  COMPLETED
+  BLOCKED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Task {
+  id              String       @id @default(uuid())
+  firmId          String
+  matterId        String?      // nullable: independent tasks allowed
+  hearingId       String?      // optional: task tied to hearing prep
+  assignedById    String
+  assignedToId    String
+  title           String
+  description     String?
+  taskType        TaskType?
+  status          TaskStatus   @default(PENDING)
+  priority        TaskPriority @default(MEDIUM)
+  dueDate         DateTime?
+  estimatedHours  Decimal?     @db.Decimal(6, 2)
+  completionNotes String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  firm        Firm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  matter      Matter?          @relation(fields: [matterId], references: [id])
+  hearing     Hearing?         @relation(fields: [hearingId], references: [id])
+  assignedTo  Associate        @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedBy  Associate        @relation("TaskAssigner", fields: [assignedById], references: [id])
+  notes       TaskNote[]
+  attachments TaskAttachment[]
+
+  @@index([assignedToId, status, dueDate])
+  @@index([matterId])
+}
+
+model TaskNote {
+  id        String   @id @default(uuid())
+  taskId    String
+  authorId  String
+  note      String
+  createdAt DateTime @default(now())
+
+  task   Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author Associate @relation(fields: [authorId], references: [id])
+}
+
+model TaskAttachment {
+  id           String   @id @default(uuid())
+  taskId       String
+  fileUrl      String
+  label        String?  // "Court stamp copy", "Filed petition scan"
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// DOCUMENTS (versioned)
+// ==========================================
+
+enum DocumentCategory {
+  PLEADING
+  EVIDENCE
+  CORRESPONDENCE
+  ORDER_SHEET
+  AFFIDAVIT
+  CONTRACT
+  OTHER
+}
+
+model CaseDocument {
+  id        String           @id @default(uuid())
+  matterId  String
+  title     String
+  category  DocumentCategory
+  createdAt DateTime         @default(now())
+
+  matter   Matter                @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  versions CaseDocumentVersion[]
+}
+
+model CaseDocumentVersion {
+  id            String   @id @default(uuid())
+  documentId    String
+  versionNumber Int
+  fileUrl       String
+  uploadedById  String
+  changeNotes   String?
+  isCurrent     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  document CaseDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, isCurrent])
+}
+
+// ==========================================
+// AUDIT LOG
+// ==========================================
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  firmId        String
+  entityType    String   // "Matter" | "Task" | "Hearing" | "CaseDocument"
+  entityId      String
+  action        String   // "STAGE_CHANGED" | "TASK_COMPLETED" | "DOCUMENT_VERSIONED" | "MATTER_ARCHIVED"
+  performedById String
+  beforeState   Json?
+  afterState    Json?
+  createdAt     DateTime @default(now())
+
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([firmId, entityType, entityId])
 }

@@ -18,6 +18,10 @@ import { FixedExpensesModule } from "./modules/expenses/fixed-expenses/fixed-exp
 import { ManualExpensesModule } from "./modules/expenses/manual-expenses/manual-expenses.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { UsersModule } from "./modules/users/users.module";
+import { MattersModule } from "./modules/matters/matters.module";
+import { HearingsModule } from "./modules/matters/hearings/hearings.module";
+import { TasksModule } from "./modules/tasks/tasks.module";
+import { CaseDocumentsModule } from "./modules/case-documents/case-documents.module";
 
 @Module({
   imports: [
@@ -37,7 +41,11 @@ import { UsersModule } from "./modules/users/users.module";
     LeaveModule,
     FixedExpensesModule,
     ManualExpensesModule,
-    FirmsModule
+    FirmsModule,
+    MattersModule,
+    HearingsModule,
+    TasksModule,
+    CaseDocumentsModule
   ],
   controllers: [AppController],
   providers: [

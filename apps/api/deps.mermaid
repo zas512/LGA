@@ -2,19 +2,31 @@ graph LR
   AssociatesModule --> AppModule
   AttendanceModule --> AppModule
   AuthModule --> AppModule
+  CaseDocumentsModule --> AppModule
   FirmsModule --> AppModule
   FixedExpensesModule --> AppModule
+  HearingsModule --> AppModule
   LeaveModule --> AppModule
   ManualExpensesModule --> AppModule
+  MattersModule --> AppModule
+  MattersModule --> CaseDocumentsModule
+  MattersModule --> HearingsModule
   PrismaModule --> AppModule
   PrismaModule --> AssociatesModule
   PrismaModule --> AttendanceModule
   PrismaModule --> AuthModule
+  PrismaModule --> CaseDocumentsModule
   PrismaModule --> FirmsModule
   PrismaModule --> FixedExpensesModule
+  PrismaModule --> HearingsModule
   PrismaModule --> LeaveModule
   PrismaModule --> ManualExpensesModule
+  PrismaModule --> MattersModule
+  PrismaModule --> TasksModule
   PrismaModule --> UsersModule
+  TasksModule --> AppModule
   UsersModule --> AppModule
   UsersModule --> AssociatesModule
   UsersModule --> AttendanceModule
+  UsersModule --> MattersModule
+  UsersModule --> TasksModule
