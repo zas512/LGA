@@ -6,6 +6,7 @@ export interface UserSession {
   email: string;
   role: "SUPER_ADMIN" | "OWNER" | "ADMIN" | "ASSOCIATE";
   firmId: string | null;
+  name: string | null;
 }
 
 export interface AuthTokens {

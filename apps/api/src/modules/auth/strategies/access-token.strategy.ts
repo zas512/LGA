@@ -12,6 +12,7 @@ export interface JwtPayload {
   email: string;
   role: UserRole;
   firmId: string | null;
+  name?: string | null;
 }
 
 export const ACCESS_TOKEN_STRATEGY = "jwt-access";
@@ -31,7 +32,6 @@ export class AccessTokenStrategy extends PassportStrategy(
       secretOrKey: config.get("JWT_ACCESS_SECRET", { infer: true })
     });
   }
-
   validate(payload: JwtPayload): JwtPayload {
     return payload;
   }

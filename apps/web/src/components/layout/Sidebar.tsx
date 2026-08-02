@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -9,16 +8,17 @@ import {
   Calendar,
   CreditCard,
   Sparkles,
-  Scale,
   Building2
 } from "lucide-react";
 import { LogoutButton } from "../auth/LogoutButton";
+import Image from "next/image";
 
 interface SidebarProps {
   user: {
     email: string;
     role: string;
     firmId: string | null;
+    name?: string | null;
   };
 }
 
@@ -59,7 +59,16 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
   ];
 
   const filteredNav = navItems.filter((item) => item.roles.includes(user.role));
-  const userInitials = user.email.substring(0, 2).toUpperCase();
+
+  const displayName = user.name || user.email;
+  const getInitials = (nameStr: string) => {
+    const parts = nameStr.trim().split(/\s+/);
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return nameStr.substring(0, 2).toUpperCase();
+  };
+  const userInitials = getInitials(displayName);
 
   return (
     <aside className="w-64 shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col justify-between p-5 min-h-screen text-sidebar-foreground">
@@ -67,30 +76,33 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       <div className="space-y-6">
         {/* Brand Logo & Title */}
         <div className="flex items-center gap-3 pb-2 border-b border-sidebar-border">
-          <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-xs">
-            <Scale className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="font-extrabold text-sm text-sidebar-foreground tracking-tight">
-              Laal Global
-            </h2>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-              Advisory CRM
-            </p>
-          </div>
+          <Image
+            src="/lgt_black.png"
+            alt=""
+            width={300}
+            height={100}
+            className="object-contain dark:hidden"
+          />
+          <Image
+            src="/lgt_white.png"
+            alt=""
+            width={300}
+            height={100}
+            className="object-contain hidden dark:block"
+          />
         </div>
 
         {/* User Profile Card */}
         <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-xs">
-          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
+          <div className="h-9 w-9 rounded-full bg-primary/10 dark:bg-primary/50 text-primary dark:text-primary-foreground font-bold flex items-center justify-center text-sm border border-primary/20 shrink-0">
             {userInitials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-card-foreground truncate">
-              {user.email}
+            <p className="text-md font-bold text-card-foreground truncate">
+              {displayName}
             </p>
-            <span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 mt-0.5">
-              {user.role}
+            <span className="inline-block text-xs font-bold text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/50 px-2 py-0.5 rounded-full border border-primary/20 mt-0.5">
+              {user.role === "OWNER" ? "Principle Counsel" : user.role}
             </span>
           </div>
         </div>

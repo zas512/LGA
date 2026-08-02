@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAttendance } from "@/components/attendance/AttendanceContext";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 interface HeaderProps {
   title?: string;
@@ -12,9 +14,12 @@ interface HeaderProps {
 }
 
 export function Header({
-  title = "Dashboard",
-  breadcrumb = "Firm / Overview"
+  title: propTitle,
+  breadcrumb: propBreadcrumb
 }: Readonly<HeaderProps>) {
+  const reduxHeader = useSelector((state: RootState) => state.header);
+  const title = propTitle ?? reduxHeader.title;
+  const breadcrumb = propBreadcrumb ?? reduxHeader.breadcrumb;
   const { user } = useAuth();
   const { isCheckedIn, currentRecord, checkIn, checkOut } = useAttendance();
 

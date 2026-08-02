@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
 import type { ReactNode } from "react";
 
 export default async function DashboardLayout({
@@ -21,7 +22,10 @@ export default async function DashboardLayout({
 
       {/* Main Right Content Area */}
       <main className="flex-1 overflow-y-auto p-6 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">{children}</div>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Header />
+          {children}
+        </div>
       </main>
     </div>
   );

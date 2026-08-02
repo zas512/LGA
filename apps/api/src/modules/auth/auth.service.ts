@@ -160,12 +160,14 @@ export class AuthService {
     email: string;
     role: UserRole;
     firmId: string | null;
+    name: string | null;
   }): Promise<AuthTokens> {
     const tokens = await this.issueTokens({
       sub: user.id,
       email: user.email,
       role: user.role,
-      firmId: user.firmId
+      firmId: user.firmId,
+      name: user.name
     });
     await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
     return tokens;

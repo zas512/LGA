@@ -1,10 +1,11 @@
-import { api, setAccessToken, clearTokens } from "./api";
+import { clearTokens } from "./api";
 
 export interface User {
   sub: string;
   email: string;
   role: "SUPER_ADMIN" | "OWNER" | "ADMIN" | "ASSOCIATE";
   firmId: string | null;
+  name?: string | null;
   isCheckedIn?: boolean;
 }
 
@@ -14,35 +15,32 @@ export interface LoginResponse {
   message?: string;
 }
 
-/**
- * Centralized Login Action
- * Calls Next.js API /api/auth/login or NestJS /auth/login, sets tokens, updates Axios
- */
-export async function login(credentials: { email: string; password: string }): Promise<User> {
-  console.log("[Centralized Auth] 🔑 Authenticating via Axios:", credentials.email);
+export async function login(credentials: {
+  email: string;
+  password: string;
+}): Promise<User> {
+  console.log(
+    "[Centralized Auth] 🔑 Authenticating via Axios:",
+    credentials.email
+  );
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(credentials)
   });
-
   const data = await response.json();
-
   if (!response.ok) {
     throw new Error(data.message || "Failed to sign in");
   }
-
   if (data.user) {
-    console.log("[Centralized Auth] ✅ User logged in successfully:", data.user);
+    console.log(
+      "[Centralized Auth] ✅ User logged in successfully:",
+      data.user
+    );
   }
-
   return data.user;
 }
 
-/**
- * Centralized Logout Action
- * Calls logout API, clears Axios tokens, and redirects to /login
- */
 export async function logout(): Promise<void> {
   console.log("[Centralized Auth] 🚪 Logging out...");
   try {
@@ -57,10 +55,6 @@ export async function logout(): Promise<void> {
   }
 }
 
-/**
- * Centralized Auth Check / Current User Reader
- * Checks if current user session is valid via /api/auth/me
- */
 export async function checkAuth(): Promise<User | null> {
   try {
     const res = await fetch("/api/auth/me", { cache: "no-store" });

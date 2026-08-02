@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { Header } from "@/components/layout/Header";
+import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { AssociatesClient } from "@/components/associates/AssociatesClient";
 
 export default async function AssociatesPage() {
@@ -13,7 +13,7 @@ export default async function AssociatesPage() {
   }
   return (
     <div className="space-y-6">
-      <Header
+      <HeaderUpdater
         title="Law Firm Associates & Staff"
         breadcrumb="Associates Directory"
       />

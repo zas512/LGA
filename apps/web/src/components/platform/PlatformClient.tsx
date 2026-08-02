@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -41,18 +42,15 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog";
-import {
-  Building2,
-  Plus,
-  Search,
-  Calendar,
-  User,
-  Mail
-} from "lucide-react";
+import { Building2, Plus, Search, Calendar, User, Mail } from "lucide-react";
 
 const createFirmSchema = z.object({
-  name: z.string().min(2, { message: "Firm name must be at least 2 characters" }),
-  ownerName: z.string().min(2, { message: "Owner name must be at least 2 characters" }),
+  name: z
+    .string()
+    .min(2, { message: "Firm name must be at least 2 characters" }),
+  ownerName: z
+    .string()
+    .min(2, { message: "Owner name must be at least 2 characters" }),
   ownerEmail: z.email({ message: "Valid owner email is required" }),
   ownerPassword: z
     .string()
@@ -239,16 +237,9 @@ export function PlatformClient() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header Navigation */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground">
-            Multi-Tenant Firms
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Manage law firms registered on the platform
-          </p>
-        </div>
+      <HeaderUpdater title="Multi-Tenant Firms" breadcrumb="Platform / Firms" />
+      {/* Top Actions/Search Bar Navigation */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex items-center gap-3">
           <div className="relative w-64">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -373,13 +364,17 @@ export function PlatformClient() {
               Create Tenant Firm
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Register a new tenant law firm and create its administrator/owner account.
+              Register a new tenant law firm and create its administrator/owner
+              account.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
             {/* Firm Name */}
             <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="name"
+                className="text-xs font-bold text-foreground"
+              >
                 Firm Name <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -397,7 +392,10 @@ export function PlatformClient() {
 
             {/* Owner Name */}
             <div className="space-y-1.5">
-              <Label htmlFor="ownerName" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="ownerName"
+                className="text-xs font-bold text-foreground"
+              >
                 Owner Full Name <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -415,7 +413,10 @@ export function PlatformClient() {
 
             {/* Owner Email */}
             <div className="space-y-1.5">
-              <Label htmlFor="ownerEmail" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="ownerEmail"
+                className="text-xs font-bold text-foreground"
+              >
                 Owner Email <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -434,8 +435,12 @@ export function PlatformClient() {
 
             {/* Owner Password */}
             <div className="space-y-1.5">
-              <Label htmlFor="ownerPassword" className="text-xs font-bold text-foreground">
-                Initial Owner Password <span className="text-destructive">*</span>
+              <Label
+                htmlFor="ownerPassword"
+                className="text-xs font-bold text-foreground"
+              >
+                Initial Owner Password{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="ownerPassword"
@@ -492,7 +497,9 @@ export function PlatformClient() {
                       {selectedFirm.name}
                     </DialogTitle>
                     <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                      <span>Tenant ID: {selectedFirm.id.substring(0, 8)}...</span>
+                      <span>
+                        Tenant ID: {selectedFirm.id.substring(0, 8)}...
+                      </span>
                     </DialogDescription>
                   </div>
                 </div>
