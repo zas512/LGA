@@ -58,6 +58,22 @@ export class MattersController {
     return this.mattersService.findAll(user.firmId, user.role, associateId);
   }
 
+  @Get("stages")
+  async getStages(@CurrentUser() user: JwtPayload) {
+    if (!user.firmId) {
+      throw new ForbiddenException("Must belong to a firm");
+    }
+    return this.mattersService.findStages(user.firmId);
+  }
+
+  @Get("parties")
+  async getParties(@CurrentUser() user: JwtPayload) {
+    if (!user.firmId) {
+      throw new ForbiddenException("Must belong to a firm");
+    }
+    return this.mattersService.findParties(user.firmId);
+  }
+
   @Get(":id")
   async findOne(
     @Param("id", ParseUUIDPipe) id: string,

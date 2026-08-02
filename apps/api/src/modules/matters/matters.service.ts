@@ -45,14 +45,29 @@ const MATTER_SELECT = {
     select: {
       id: true,
       associateId: true,
-      role: true
+      role: true,
+      associate: {
+        select: {
+          fullName: true,
+          email: true,
+          designation: true
+        }
+      }
     }
   },
   parties: {
     select: {
       id: true,
       partyId: true,
-      partyRole: true
+      partyRole: true,
+      party: {
+        select: {
+          name: true,
+          phone: true,
+          email: true,
+          isExternal: true
+        }
+      }
     }
   }
 } satisfies Prisma.MatterSelect;
@@ -528,5 +543,27 @@ export class MattersService {
     const timeline = await this.getTimeline(id, firmId, UserRole.OWNER);
 
     return this.pdfReport.generateMatterSummaryPdf(matter, timeline);
+  }
+
+  async findStages(firmId: string) {
+    return this.prisma.courtStage.findMany({
+      where: {
+        OR: [
+          { firmId: null },
+          { firmId }
+        ]
+      },
+      orderBy: [
+        { caseType: "asc" },
+        { sequenceOrder: "asc" }
+      ]
+    });
+  }
+
+  async findParties(firmId: string) {
+    return this.prisma.party.findMany({
+      where: { firmId },
+      orderBy: { name: "asc" }
+    });
   }
 }

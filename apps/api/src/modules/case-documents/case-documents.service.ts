@@ -225,4 +225,26 @@ export class CaseDocumentsService {
 
     return toEntities(CaseDocumentVersionEntity, versions);
   }
+
+  async findAllForMatter(
+    matterId: string,
+    firmId: string,
+    user: JwtPayload
+  ): Promise<CaseDocumentEntity[]> {
+    // 1. Verify access to matter
+    await this.mattersService.findOne(
+      matterId,
+      firmId,
+      user.role,
+      user.role === UserRole.ASSOCIATE ? user.sub : undefined
+    );
+
+    const docs = await this.prisma.caseDocument.findMany({
+      where: { matterId },
+      select: DOCUMENT_SELECT,
+      orderBy: { createdAt: "desc" }
+    });
+
+    return toEntities(CaseDocumentEntity, docs);
+  }
 }

@@ -33,6 +33,17 @@ export class CaseDocumentsController {
     return this.documentsService.create(matterId, user.firmId, user, dto);
   }
 
+  @Get("matters/:matterId/documents")
+  async findAllForMatter(
+    @Param("matterId", ParseUUIDPipe) matterId: string,
+    @CurrentUser() user: JwtPayload
+  ): Promise<CaseDocumentEntity[]> {
+    if (!user.firmId) {
+      throw new ForbiddenException("Must belong to a firm");
+    }
+    return this.documentsService.findAllForMatter(matterId, user.firmId, user);
+  }
+
   @Post("case-documents/:id/versions")
   async createVersion(
     @Param("id", ParseUUIDPipe) id: string,

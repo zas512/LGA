@@ -34,7 +34,13 @@ const TASK_SELECT = {
       id: true,
       authorId: true,
       note: true,
-      createdAt: true
+      createdAt: true,
+      author: {
+        select: {
+          fullName: true,
+          email: true
+        }
+      }
     }
   },
   attachments: {
@@ -44,6 +50,18 @@ const TASK_SELECT = {
       label: true,
       uploadedById: true,
       createdAt: true
+    }
+  },
+  assignedTo: {
+    select: {
+      fullName: true,
+      email: true
+    }
+  },
+  assignedBy: {
+    select: {
+      fullName: true,
+      email: true
     }
   }
 } satisfies Prisma.TaskSelect;

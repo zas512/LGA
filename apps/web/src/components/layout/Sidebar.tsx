@@ -8,7 +8,8 @@ import {
   Calendar,
   CreditCard,
   Sparkles,
-  Building2
+  Building2,
+  Scale
 } from "lucide-react";
 import { LogoutButton } from "../auth/LogoutButton";
 import Image from "next/image";
@@ -31,6 +32,12 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       href: "/dashboard",
       icon: LayoutDashboard,
       roles: ["OWNER", "ADMIN", "ASSOCIATE", "SUPER_ADMIN"]
+    },
+    {
+      title: "Matters & Cases",
+      href: "/matters",
+      icon: Scale,
+      roles: ["OWNER", "ADMIN", "ASSOCIATE"]
     },
     {
       title: "Associates & Staff",
