@@ -1,8 +1,4 @@
 "use client";
-import {
-  AttendanceRecord,
-  useAttendance
-} from "@/components/attendance/AttendanceContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,16 +10,28 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getErrorMessage } from "@/lib/utils";
 import { type SubmitEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
+
+interface AttendanceRecord {
+  id: string;
+  associateId: string;
+  date: string;
+  checkIn: string;
+  checkOut: string | null;
+  status: "PRESENT" | "ABSENT" | "HALF_DAY" | "LEAVE";
+  source: "MANUAL" | "BIOMETRIC_IMPORT" | "REMOTE_CHECKIN";
+  notes?: string;
+}
 
 interface AddDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
-const AddDialog = ({ open, onOpenChange }: AddDialogProps) => {
-  const { addManualRecord } = useAttendance();
-
+const AddDialog = ({ open, onOpenChange, onSuccess }: AddDialogProps) => {
   // Form states for adding manual record
   const [addDate, setAddDate] = useState("");
   const [addCheckIn, setAddCheckIn] = useState("");
@@ -49,14 +57,37 @@ const AddDialog = ({ open, onOpenChange }: AddDialogProps) => {
   const handleAddSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!addDate || !addCheckIn || !addCheckOut) return;
-    await addManualRecord(
-      addDate,
-      addCheckIn,
-      addCheckOut,
-      addStatus,
-      addNotes
-    );
-    onOpenChange(false);
+
+    try {
+      const checkInISO = new Date(`${addDate}T${addCheckIn}:00`).toISOString();
+      const checkOutISO = new Date(
+        `${addDate}T${addCheckOut}:00`
+      ).toISOString();
+
+      const res = await fetch("/api/attendance/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: addDate,
+          checkIn: checkInISO,
+          checkOut: checkOutISO,
+          status: addStatus,
+          notes: addNotes,
+          source: "MANUAL"
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to add manual record");
+      }
+      toast.success("Manual record added successfully!");
+      onSuccess();
+      onOpenChange(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Error adding record"));
+    }
   };
 
   return (

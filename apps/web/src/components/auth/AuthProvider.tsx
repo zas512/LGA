@@ -1,8 +1,19 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { User, login as authLogin, logout as authLogout, checkAuth } from "@/lib/auth";
+import {
+  User,
+  login as authLogin,
+  logout as authLogout,
+  checkAuth
+} from "@/lib/auth";
+import { usePathname, useRouter } from "next/navigation";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from "react";
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +21,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,7 +34,9 @@ const PROTECTED_PATHS = [
   "/platform"
 ];
 
-export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+export function AuthProvider({
+  children
+}: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -32,32 +46,50 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     let isMounted = true;
 
     async function initAuth() {
-      console.log("[AuthProvider] 🔍 App started. Checking for active tokens & session...");
+      console.log(
+        "[AuthProvider] 🔍 App started. Checking for active tokens & session..."
+      );
       try {
         const activeUser = await checkAuth();
 
         if (!isMounted) return;
 
         if (activeUser) {
-          console.log("[AuthProvider] ✅ Token found! Authenticated user:", activeUser.email, `(${activeUser.role})`);
+          console.log(
+            "[AuthProvider] ✅ Token found! Authenticated user:",
+            activeUser.email,
+            `(${activeUser.role})`
+          );
           setUser(activeUser);
 
           // If on login page while authenticated, route to appropriate page
           if (pathname === "/login") {
-            const targetPath = activeUser.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
-            console.log(`[AuthProvider] 🔀 Authenticated user on login page. Routing to ${targetPath}`);
+            const targetPath =
+              activeUser.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
+            console.log(
+              `[AuthProvider] 🔀 Authenticated user on login page. Routing to ${targetPath}`
+            );
             router.replace(targetPath);
-          } else if (pathname.startsWith("/platform") && activeUser.role !== "SUPER_ADMIN") {
-            console.log("[AuthProvider] ⛔ Non-SuperAdmin on platform area. Routing to /dashboard");
+          } else if (
+            pathname.startsWith("/platform") &&
+            activeUser.role !== "SUPER_ADMIN"
+          ) {
+            console.log(
+              "[AuthProvider] ⛔ Non-SuperAdmin on platform area. Routing to /dashboard"
+            );
             router.replace("/dashboard");
           }
         } else {
           console.log("[AuthProvider] ⚠️ No active token/session found.");
           setUser(null);
 
-          const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
+          const isProtected = PROTECTED_PATHS.some((p) =>
+            pathname.startsWith(p)
+          );
           if (isProtected) {
-            console.log(`[AuthProvider] 🔒 Protected route (${pathname}) accessed without auth. Redirecting to /login`);
+            console.log(
+              `[AuthProvider] 🔒 Protected route (${pathname}) accessed without auth. Redirecting to /login`
+            );
             router.replace("/login");
           }
         }
@@ -77,13 +109,19 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     };
   }, [pathname, router]);
 
-  const handleLogin = async (credentials: { email: string; password: string }) => {
+  const handleLogin = async (credentials: {
+    email: string;
+    password: string;
+  }) => {
     setIsLoading(true);
     try {
       const loggedUser = await authLogin(credentials);
       setUser(loggedUser);
-      const destination = loggedUser.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
-      console.log(`[AuthProvider] 🚀 Login succeeded! Routing to: ${destination}`);
+      const destination =
+        loggedUser.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
+      console.log(
+        `[AuthProvider] 🚀 Login succeeded! Routing to: ${destination}`
+      );
       router.push(destination);
       router.refresh();
     } catch (err) {
@@ -98,13 +136,23 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     await authLogout();
   };
 
+  const handleRefreshUser = async () => {
+    try {
+      const activeUser = await checkAuth();
+      setUser(activeUser);
+    } catch (err) {
+      console.error("[AuthProvider] Error refreshing user session:", err);
+    }
+  };
+
   const value = useMemo(
     () => ({
       user,
       isLoading,
       isAuthenticated: Boolean(user),
       login: handleLogin,
-      logout: handleLogout
+      logout: handleLogout,
+      refreshUser: handleRefreshUser
     }),
     [user, isLoading]
   );

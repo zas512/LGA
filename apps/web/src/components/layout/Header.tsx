@@ -1,16 +1,17 @@
 "use client";
-import { useAttendance } from "@/components/attendance/AttendanceContext";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Input } from "@/components/ui/input";
+import { getErrorMessage } from "@/lib/utils";
 import { RootState } from "@/redux/store";
 import { Bell, Play, Search, Square } from "lucide-react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
 
 interface HeaderProps {
   title?: string;
   breadcrumb?: string;
-  userRole?: string; // Suppressed compile errors if passed
+  userRole?: string;
 }
 
 export function Header({
@@ -20,8 +21,57 @@ export function Header({
   const reduxHeader = useSelector((state: RootState) => state.header);
   const title = propTitle ?? reduxHeader.title;
   const breadcrumb = propBreadcrumb ?? reduxHeader.breadcrumb;
-  const { user } = useAuth();
-  const { isCheckedIn, currentRecord, checkIn, checkOut } = useAttendance();
+  const { user, refreshUser } = useAuth();
+
+  const isCheckedIn = user?.isCheckedIn ?? false;
+  const activeCheckInTime = user?.activeCheckInTime;
+
+  const checkIn = async () => {
+    try {
+      const localDate = new Date();
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, "0");
+      const day = String(localDate.getDate()).padStart(2, "0");
+      const clientDate = `${year}-${month}-${day}`;
+
+      const res = await fetch("/api/attendance/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientDate })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to check in");
+      }
+
+      toast.success("Checked in successfully!");
+      await refreshUser();
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Check-in failed"));
+    }
+  };
+
+  const checkOut = async () => {
+    try {
+      const res = await fetch("/api/attendance/check-out", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to check out");
+      }
+
+      toast.success("Checked out successfully!");
+      await refreshUser();
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Check-out failed"));
+    }
+  };
 
   // Helper to format check-in time statically
   const formatTimeFriendly = (isoStr: string | null | undefined) => {
@@ -66,7 +116,7 @@ export function Header({
               <div className="flex items-center gap-2 bg-card border border-border rounded-xl p-1 shadow-xs">
                 <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-bold text-xs rounded-lg">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
-                  <span>In: {formatTimeFriendly(currentRecord?.checkIn)}</span>
+                  <span>In: {formatTimeFriendly(activeCheckInTime)}</span>
                 </div>
                 <button
                   onClick={() => checkOut()}

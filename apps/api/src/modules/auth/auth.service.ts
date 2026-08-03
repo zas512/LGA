@@ -7,15 +7,15 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import type { SignOptions } from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
-import { PrismaService } from "../../prisma/prisma.service";
+import type { SignOptions } from "jsonwebtoken";
 import { toEntity } from "../../common/serialization/serialize";
 import type { EnvironmentVariables } from "../../config/env.validation";
 import { UserRole } from "../../generated/prisma/client";
+import { PrismaService } from "../../prisma/prisma.service";
 import { BCRYPT_ROUNDS } from "./auth.constants";
-import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
+import { RegisterDto } from "./dto/register.dto";
 import { AuthUserEntity } from "./entities/auth.entity";
 import type { JwtPayload } from "./strategies/access-token.strategy";
 
@@ -139,11 +139,15 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const isCheckedIn = user.associateId
-      ? (await this.prisma.attendance.count({
-          where: { associateId: user.associateId, checkOut: null }
-        })) > 0
-      : false;
+    const activeShift = user.associateId
+      ? await this.prisma.attendance.findFirst({
+          where: { associateId: user.associateId, checkOut: null },
+          select: { checkIn: true }
+        })
+      : null;
+
+    const isCheckedIn = activeShift !== null;
+    const activeCheckInTime = activeShift?.checkIn ?? null;
 
     return toEntity(AuthUserEntity, {
       sub: user.id,
@@ -151,8 +155,8 @@ export class AuthService {
       name: user.name,
       role: user.role,
       firmId: user.firmId,
-      associateId: user.associateId,
-      isCheckedIn
+      isCheckedIn,
+      activeCheckInTime
     });
   }
 

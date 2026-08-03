@@ -1,12 +1,11 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { store } from "@/redux/store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "sonner";
-import { AuthProvider } from "@/components/auth/AuthProvider";
-import { AttendanceProvider } from "@/components/attendance/AttendanceContext";
+import { useState, type ReactNode } from "react";
 import { Provider } from "react-redux";
-import { store } from "@/redux/store";
+import { Toaster } from "sonner";
 
 export default function Providers({
   children
@@ -32,10 +31,8 @@ export default function Providers({
         disableTransitionOnChange
       >
         <AuthProvider>
-          <AttendanceProvider>
-            <Provider store={store}>{children}</Provider>
-            <Toaster position="top-right" richColors closeButton />
-          </AttendanceProvider>
+          <Provider store={store}>{children}</Provider>
+          <Toaster position="top-right" richColors closeButton />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

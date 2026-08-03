@@ -1,8 +1,4 @@
 "use client";
-import {
-  AttendanceRecord,
-  useAttendance
-} from "@/components/attendance/AttendanceContext";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CustomTable } from "@/components/ui/table";
+import { getErrorMessage } from "@/lib/utils";
 import type { ColumnConfig } from "@/types/tableTypes";
 import {
   AlertCircle,
@@ -25,7 +22,24 @@ import {
   UserCheck
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
+interface AttendanceRecord {
+  id: string;
+  associateId: string;
+  date: string;
+  checkIn: string;
+  checkOut: string | null;
+  status: "PRESENT" | "ABSENT" | "HALF_DAY" | "LEAVE";
+  source: "MANUAL" | "BIOMETRIC_IMPORT" | "REMOTE_CHECKIN";
+  notes?: string;
+  associate?: {
+    id: string;
+    fullName: string;
+    email: string | null;
+  };
+}
 
 const AddDialog = dynamic(() => import("@/components/attendance/AddDialog"), {
   ssr: false
@@ -35,16 +49,11 @@ const EditDialog = dynamic(() => import("@/components/attendance/EditDialog"), {
 });
 
 export default function AttendancePage() {
-  const {
-    history,
-    isCheckedIn,
-    currentRecord,
-    checkIn,
-    checkOut,
-    deleteRecord
-  } = useAttendance();
-
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const [history, setHistory] = useState<AttendanceRecord[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const isCheckedIn = user?.isCheckedIn ?? false;
+  const activeCheckInTime = user?.activeCheckInTime;
 
   // Modal control states
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -61,6 +70,113 @@ export default function AttendancePage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(5);
+
+  useEffect(() => {
+    let active = true;
+    async function loadHistory() {
+      if (!user || user.role === "SUPER_ADMIN") {
+        setHistory((prev) => (prev.length === 0 ? prev : []));
+        return;
+      }
+      const endpoint =
+        user.role === "OWNER" || user.role === "ADMIN"
+          ? "/api/attendance/firm"
+          : "/api/attendance";
+      const res = await fetch(endpoint);
+      if (!res.ok) {
+        throw new Error("Failed to load attendance records");
+      }
+      const data: AttendanceRecord[] = await res.json();
+      const formatted = data.map((rec) => {
+        const dateStr = new Date(rec.date).toISOString().split("T")[0];
+        return {
+          ...rec,
+          date: dateStr
+        };
+      });
+      if (active) {
+        setHistory(formatted);
+      }
+    }
+    loadHistory().catch((err) => {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Error loading attendance history"));
+    });
+    return () => {
+      active = false;
+    };
+  }, [user, refreshKey]);
+
+  const checkIn = async () => {
+    try {
+      const localDate = new Date();
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, "0");
+      const day = String(localDate.getDate()).padStart(2, "0");
+      const clientDate = `${year}-${month}-${day}`;
+
+      const res = await fetch("/api/attendance/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientDate })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to check in");
+      }
+
+      toast.success("Checked in successfully!");
+      await refreshUser();
+      setRefreshKey((prev) => prev + 1);
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Check-in failed"));
+    }
+  };
+
+  const checkOut = async () => {
+    try {
+      const res = await fetch("/api/attendance/check-out", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to check out");
+      }
+
+      toast.success("Checked out successfully!");
+      await refreshUser();
+      setRefreshKey((prev) => prev + 1);
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Check-out failed"));
+    }
+  };
+
+  const deleteRecord = useCallback(
+    async (id: string) => {
+      try {
+        const res = await fetch(`/api/attendance/${id}`, {
+          method: "DELETE"
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to delete record");
+        }
+
+        toast.success("Record deleted successfully");
+        await refreshUser();
+        setRefreshKey((prev) => prev + 1);
+      } catch (err) {
+        console.error(err);
+        toast.error(getErrorMessage(err, "Error deleting record"));
+      }
+    },
+    [refreshUser]
+  );
 
   // Unique list of associates represented in the history (Owner/Admin view)
   const uniqueAssociates = useMemo(() => {
@@ -447,8 +563,8 @@ export default function AttendancePage() {
                   <div className="text-xs text-muted-foreground font-semibold">
                     Shift started at:{" "}
                     <span className="text-foreground font-bold font-mono">
-                      {currentRecord
-                        ? formatTimeFriendly(currentRecord.checkIn)
+                      {activeCheckInTime
+                        ? formatTimeFriendly(activeCheckInTime)
                         : "Loading..."}
                     </span>
                   </div>
@@ -782,13 +898,24 @@ export default function AttendancePage() {
       </Card>
 
       {/* --- ADD DIALOG --- */}
-      <AddDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
+      <AddDialog
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        onSuccess={async () => {
+          await refreshUser();
+          setRefreshKey((prev) => prev + 1);
+        }}
+      />
 
       {/* --- EDIT DIALOG --- */}
       <EditDialog
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
         record={editingRecord}
+        onSuccess={async () => {
+          await refreshUser();
+          setRefreshKey((prev) => prev + 1);
+        }}
       />
     </div>
   );

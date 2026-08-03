@@ -1,10 +1,6 @@
 import { Expose } from "class-transformer";
 import type { UserRole } from "../../../generated/prisma/client";
 
-/**
- * Shape returned by `GET /auth/me`. `sub` mirrors the JWT claim name the web
- * client already reads.
- */
 export class AuthUserEntity {
   @Expose()
   sub: string;
@@ -22,7 +18,7 @@ export class AuthUserEntity {
   firmId: string | null;
 
   @Expose()
-  associateId: string | null;
+  activeCheckInTime: Date | null;
 
   @Expose()
   isCheckedIn: boolean;

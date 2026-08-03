@@ -1,8 +1,4 @@
 "use client";
-import {
-  AttendanceRecord,
-  useAttendance
-} from "@/components/attendance/AttendanceContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,17 +10,34 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getErrorMessage } from "@/lib/utils";
 import { type SubmitEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
+
+interface AttendanceRecord {
+  id: string;
+  associateId: string;
+  date: string;
+  checkIn: string;
+  checkOut: string | null;
+  status: "PRESENT" | "ABSENT" | "HALF_DAY" | "LEAVE";
+  source: "MANUAL" | "BIOMETRIC_IMPORT" | "REMOTE_CHECKIN";
+  notes?: string;
+}
 
 interface EditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   record: AttendanceRecord | null;
+  onSuccess: () => void;
 }
 
-const EditDialog = ({ open, onOpenChange, record }: EditDialogProps) => {
-  const { updateRecord } = useAttendance();
-
+const EditDialog = ({
+  open,
+  onOpenChange,
+  record,
+  onSuccess
+}: EditDialogProps) => {
   // Form states for editing record
   const [editDate, setEditDate] = useState("");
   const [editCheckIn, setEditCheckIn] = useState("");
@@ -80,15 +93,31 @@ const EditDialog = ({ open, onOpenChange, record }: EditDialogProps) => {
       outIso = outDate.toISOString();
     }
 
-    await updateRecord(record.id, {
-      date: editDate,
-      checkIn: inDate.toISOString(),
-      checkOut: outIso,
-      status: editStatus,
-      notes: editNotes
-    });
+    try {
+      const res = await fetch(`/api/attendance/${record.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: editDate,
+          checkIn: inDate.toISOString(),
+          checkOut: outIso,
+          status: editStatus,
+          notes: editNotes
+        })
+      });
 
-    onOpenChange(false);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update record");
+      }
+
+      toast.success("Record updated successfully!");
+      onSuccess();
+      onOpenChange(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Error updating record"));
+    }
   };
 
   return (
