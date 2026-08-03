@@ -1,14 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,15 +8,15 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell
-} from "@/components/ui/table";
-import { UserPlus, Shield, Users, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CustomTable, type ColumnConfig } from "@/components/ui/table";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw, Shield, UserPlus, Users } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import * as z from "zod";
 
 const createMemberSchema = z.object({
   email: z.email({ message: "Please enter a valid email address" }),
@@ -117,53 +109,52 @@ export function TeamManagementClient() {
     createMutation.mutate(values);
   }
 
+  const columns: ColumnConfig<TeamMember>[] = [
+    {
+      key: "email",
+      header: "EMPLOYEE EMAIL",
+      sortable: true,
+      accessor: (m) => m.email,
+      render: (m) => (
+        <span className="font-bold text-foreground">{m.email}</span>
+      )
+    },
+    {
+      key: "createdAt",
+      header: "CREATED DATE",
+      sortable: true,
+      accessor: (m) => new Date(m.createdAt),
+      render: (m) => (
+        <span className="text-muted-foreground font-medium flex items-center gap-1">
+          <Shield className="h-3 w-3 text-primary" />
+          {new Date(m.createdAt).toLocaleDateString()}
+        </span>
+      )
+    },
+    {
+      key: "role",
+      header: "ROLE",
+      align: "right",
+      sortable: true,
+      accessor: (m) => m.role,
+      render: (m) => (
+        <Badge variant={getRoleBadgeVariant(m.role)}>{m.role}</Badge>
+      )
+    }
+  ];
+
   const renderRosterContent = () => {
-    if (isLoading) {
-      return (
-        <div className="py-8 text-center text-xs text-muted-foreground font-medium">
-          Loading firm roster...
-        </div>
-      );
-    }
-
-    if (teamMembers.length === 0) {
-      return (
-        <div className="py-8 text-center text-xs text-muted-foreground font-medium">
-          No team members registered yet.
-        </div>
-      );
-    }
-
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>EMPLOYEE EMAIL</TableHead>
-            <TableHead>CREATED DATE</TableHead>
-            <TableHead className="text-right">ROLE</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {teamMembers.map((member) => (
-            <TableRow key={member.id}>
-              <TableCell className="font-bold text-foreground">
-                {member.email}
-              </TableCell>
-              <TableCell className="text-muted-foreground font-medium">
-                <span className="flex items-center gap-1">
-                  <Shield className="h-3 w-3 text-primary" />
-                  {new Date(member.createdAt).toLocaleDateString()}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <Badge variant={getRoleBadgeVariant(member.role)}>
-                  {member.role}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <CustomTable
+        columns={columns}
+        data={teamMembers}
+        rowKey={(m) => m.id}
+        isLoading={isLoading}
+        loadingLabel="Loading firm roster..."
+        emptyTitle="No team members registered yet."
+        emptyDescription="Add a new employee to get started."
+        pageSize={8}
+      />
     );
   };
 

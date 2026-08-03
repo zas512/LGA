@@ -1,7 +1,7 @@
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { MattersList } from "@/components/matters/MattersList";
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 export default async function MattersPage() {
   const { user } = await getSession();

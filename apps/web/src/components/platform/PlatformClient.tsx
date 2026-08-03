@@ -1,24 +1,7 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  getPaginationRowModel,
-  flexRender,
-  type ColumnDef
-} from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -27,22 +10,23 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogFooter
+  DialogTitle
 } from "@/components/ui/dialog";
-import { Building2, Plus, Search, Calendar, User, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CustomTable, type ColumnConfig } from "@/components/ui/table";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, Calendar, Mail, Plus, Search, User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import * as z from "zod";
 
 const createFirmSchema = z.object({
   name: z
@@ -138,102 +122,89 @@ export function PlatformClient() {
     createMutation.mutate(values);
   }
 
-  const columns = useMemo<ColumnDef<Firm>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: "FIRM NAME",
-        cell: ({ row }) => {
-          const firm = row.original;
-          const initials = firm.name.substring(0, 2).toUpperCase();
-          return (
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
-                {initials}
-              </div>
-              <p className="font-bold text-foreground leading-tight">
-                {firm.name}
-              </p>
-            </div>
-          );
-        }
-      },
-      {
-        accessorKey: "ownerName",
-        header: "OWNER NAME",
-        cell: ({ row }) => {
-          return (
-            <span className="text-xs text-foreground font-semibold">
-              {row.original.ownerName}
-            </span>
-          );
-        }
-      },
-      {
-        accessorKey: "ownerEmail",
-        header: "OWNER EMAIL",
-        cell: ({ row }) => {
-          return (
-            <span className="text-xs text-muted-foreground font-medium">
-              {row.original.ownerEmail}
-            </span>
-          );
-        }
-      },
-      {
-        accessorKey: "createdAt",
-        header: "CREATED DATE",
-        cell: ({ row }) => {
-          return (
-            <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5 text-primary/70" />
-              {new Date(row.original.createdAt).toLocaleDateString()}
-            </span>
-          );
-        }
-      },
-      {
-        id: "actions",
-        header: () => <div className="text-center">ACTIONS</div>,
-        cell: ({ row }) => {
-          return (
-            <div className="text-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedFirm(row.original);
-                }}
-                className="h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/10 font-bold gap-1 rounded-xl"
-              >
-                <span>View</span>
-              </Button>
-            </div>
-          );
-        }
-      }
-    ],
-    []
-  );
+  const filteredFirms = useMemo(() => {
+    return allFirms.filter((firm) => {
+      const searchStr =
+        `${firm.name} ${firm.ownerName} ${firm.ownerEmail}`.toLowerCase();
+      return !globalFilter || searchStr.includes(globalFilter.toLowerCase());
+    });
+  }, [allFirms, globalFilter]);
 
-  const table = useReactTable({
-    data: allFirms,
-    columns,
-    state: {
-      globalFilter
-    },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 8
+  const columns: ColumnConfig<Firm>[] = [
+    {
+      key: "name",
+      header: "FIRM NAME",
+      sortable: true,
+      accessor: (firm) => firm.name,
+      render: (firm) => {
+        const initials = firm.name.substring(0, 2).toUpperCase();
+        return (
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
+              {initials}
+            </div>
+            <p className="font-bold text-foreground leading-tight">
+              {firm.name}
+            </p>
+          </div>
+        );
       }
+    },
+    {
+      key: "ownerName",
+      header: "OWNER NAME",
+      sortable: true,
+      accessor: (firm) => firm.ownerName,
+      render: (firm) => (
+        <span className="text-xs text-foreground font-semibold">
+          {firm.ownerName}
+        </span>
+      )
+    },
+    {
+      key: "ownerEmail",
+      header: "OWNER EMAIL",
+      sortable: true,
+      accessor: (firm) => firm.ownerEmail,
+      render: (firm) => (
+        <span className="text-xs text-muted-foreground font-medium">
+          {firm.ownerEmail}
+        </span>
+      )
+    },
+    {
+      key: "createdAt",
+      header: "CREATED DATE",
+      sortable: true,
+      accessor: (firm) => new Date(firm.createdAt),
+      render: (firm) => (
+        <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5 text-primary/70" />
+          {new Date(firm.createdAt).toLocaleDateString()}
+        </span>
+      )
+    },
+    {
+      key: "actions",
+      header: "ACTIONS",
+      align: "center",
+      render: (firm) => (
+        <div className="text-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedFirm(firm);
+            }}
+            className="h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/10 font-bold gap-1 rounded-xl"
+          >
+            <span>View</span>
+          </Button>
+        </div>
+      )
     }
-  });
+  ];
 
   return (
     <div className="space-y-6">
@@ -276,82 +247,17 @@ export function PlatformClient() {
           </Badge>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="py-12 text-center text-xs text-muted-foreground font-medium">
-              Loading firms...
-            </div>
-          ) : table.getRowModel().rows.length === 0 ? (
-            <div className="py-12 text-center text-xs text-muted-foreground font-medium">
-              No registered firms found.
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      onClick={() => setSelectedFirm(row.original)}
-                      className="cursor-pointer hover:bg-muted/60 transition-colors"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Table Pagination Bar */}
-              <div className="flex items-center justify-between p-4 border-t border-border/60 text-xs text-muted-foreground">
-                <span>
-                  Showing Page {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                    className="h-8 text-xs rounded-xl"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                    className="h-8 text-xs rounded-xl"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+          <CustomTable
+            columns={columns}
+            data={filteredFirms}
+            rowKey={(firm) => firm.id}
+            isLoading={isLoading}
+            loadingLabel="Loading firms..."
+            emptyTitle="No registered firms found."
+            emptyDescription="Create a new firm to get started."
+            pageSize={8}
+            onRowClick={(firm) => setSelectedFirm(firm)}
+          />
         </CardContent>
       </Card>
 

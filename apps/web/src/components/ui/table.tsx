@@ -1,119 +1,332 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+"use client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type {
+  ColumnConfig,
+  CustomTableProps,
+  SortState
+} from "@/types/tableTypes";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical,
+  Inbox,
+  Loader2
+} from "lucide-react";
+import { useMemo, useState } from "react";
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props}
-    />
-  </div>
-));
-Table.displayName = "Table";
+function toDisplayString(value: unknown): string {
+  if (value == null) return "";
+  if (value instanceof Date) return value.toLocaleDateString();
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "";
+  }
+}
 
-const TableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
-));
-TableHeader.displayName = "TableHeader";
+function defaultCompare(a: unknown, b: unknown): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return -1;
+  if (b == null) return 1;
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() - b.getTime();
+  }
+  if (typeof a === "number" && typeof b === "number") {
+    return a - b;
+  }
+  return toDisplayString(a).localeCompare(toDisplayString(b), undefined, {
+    sensitivity: "base"
+  });
+}
 
-const TableBody = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
-    {...props}
-  />
-));
-TableBody.displayName = "TableBody";
+export function CustomTable<T>({
+  columns,
+  data,
+  rowKey,
+  isLoading = false,
+  loadingLabel = "Loading...",
+  emptyTitle = "No records found",
+  emptyDescription = "Adjust filters or add a new record to begin.",
+  emptyIcon,
+  onRowClick,
+  pageSize = 8,
+  onColumnOrderChange
+}: Readonly<CustomTableProps<T>>) {
+  const [columnOrder, setColumnOrder] = useState<string[]>(() =>
+    columns.map((c) => c.key)
+  );
+  const [draggedKey, setDraggedKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortState>({ key: null, direction: null });
+  const [pageIndex, setPageIndex] = useState(0);
 
-const TableFooter = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tfoot
-    ref={ref}
-    className={cn(
-      "border-t bg-muted/50 font-medium [&>tr]:last-child:border-b-0",
-      className
-    )}
-    {...props}
-  />
-));
-TableFooter.displayName = "TableFooter";
+  const columnMap = useMemo(() => {
+    const map = new Map<string, ColumnConfig<T>>();
+    columns.forEach((c) => map.set(c.key, c));
+    return map;
+  }, [columns]);
 
-const TableRow = React.forwardRef<
-  HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b border-border/60 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...props}
-  />
-));
-TableRow.displayName = "TableRow";
+  const orderedColumns = useMemo(
+    () =>
+      columnOrder
+        .map((key) => columnMap.get(key))
+        .filter((c): c is ColumnConfig<T> => Boolean(c)),
+    [columnOrder, columnMap]
+  );
 
-const TableHead = React.forwardRef<
-  HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <th
-    ref={ref}
-    className={cn(
-      "h-10 px-3 text-left align-middle text-xs font-bold text-muted-foreground has-[[role=checkbox]]:pr-0",
-      className
-    )}
-    {...props}
-  />
-));
-TableHead.displayName = "TableHead";
+  const sortedData = useMemo(() => {
+    if (!sort.key || !sort.direction) return data;
+    const col = columnMap.get(sort.key);
+    if (!col) return data;
+    const getValue = (row: T) =>
+      col.accessor
+        ? col.accessor(row)
+        : (row as Record<string, unknown>)[col.key];
+    const sorted = [...data].sort((a, b) => {
+      if (col.sortFn) return col.sortFn(a, b);
+      return defaultCompare(getValue(a), getValue(b));
+    });
+    return sort.direction === "asc" ? sorted : sorted.reverse();
+  }, [data, sort, columnMap]);
 
-const TableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn(
-      "p-3 align-middle text-xs has-[[role=checkbox]]:pr-0",
-      className
-    )}
-    {...props}
-  />
-));
-TableCell.displayName = "TableCell";
+  const handleSortClick = (colKey: string) => {
+    setSort((prev) => {
+      if (prev.key !== colKey) return { key: colKey, direction: "asc" };
+      if (prev.direction === "asc") return { key: colKey, direction: "desc" };
+      return { key: null, direction: null };
+    });
+    setPageIndex(0);
+  };
 
-const TableCaption = React.forwardRef<
-  HTMLTableCaptionElement,
-  React.HTMLAttributes<HTMLTableCaptionElement>
->(({ className, ...props }, ref) => (
-  <caption
-    ref={ref}
-    className={cn("mt-4 text-sm text-muted-foreground", className)}
-    {...props}
-  />
-));
-TableCaption.displayName = "TableCaption";
+  const pageCount = Math.max(1, Math.ceil(sortedData.length / pageSize));
+  const paginatedData = useMemo(
+    () =>
+      sortedData.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize),
+    [sortedData, pageIndex, pageSize]
+  );
 
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption
-};
+  const handleDragStart = (colKey: string) => (e: React.DragEvent) => {
+    setDraggedKey(colKey);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (colKey: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (colKey !== draggedKey) setDragOverKey(colKey);
+  };
+
+  const handleDrop = (targetKey: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggedKey || draggedKey === targetKey) {
+      setDraggedKey(null);
+      setDragOverKey(null);
+      return;
+    }
+
+    setColumnOrder((prev) => {
+      const next = [...prev];
+      const fromIndex = next.indexOf(draggedKey);
+      const toIndex = next.indexOf(targetKey);
+      next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, draggedKey);
+      onColumnOrderChange?.(next);
+      return next;
+    });
+
+    setDraggedKey(null);
+    setDragOverKey(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedKey(null);
+    setDragOverKey(null);
+  };
+
+  const alignClass = (align?: "left" | "center" | "right") => {
+    if (align === "center") return "text-center";
+    if (align === "right") return "text-right";
+    return "text-left";
+  };
+
+  const justifyClass = (align?: "left" | "center" | "right") => {
+    if (align === "center") return "justify-center";
+    if (align === "right") return "justify-end";
+    return "justify-start";
+  };
+
+  const renderTableBody = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center p-16 space-y-3">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-sm text-muted-foreground font-bold uppercase tracking-wider">
+            {loadingLabel}
+          </p>
+        </div>
+      );
+    }
+
+    if (sortedData.length === 0) {
+      return (
+        <div className="text-center p-16 space-y-2">
+          {emptyIcon ?? (
+            <Inbox className="h-12 w-12 text-muted-foreground/60 mx-auto" />
+          )}
+          <p className="font-bold text-foreground text-base">{emptyTitle}</p>
+          <p className="text-sm text-muted-foreground">{emptyDescription}</p>
+        </div>
+      );
+    }
+
+    const allColumnsHaveWidths =
+      orderedColumns.length > 0 &&
+      orderedColumns.every((col) => col.width !== undefined);
+    const tableLayoutClass = allColumnsHaveWidths
+      ? "table-fixed"
+      : "table-auto";
+
+    return (
+      <table className={`w-full border-collapse ${tableLayoutClass}`}>
+        <colgroup>
+          {orderedColumns.map((col) => (
+            <col key={col.key} style={{ width: col.width }} />
+          ))}
+        </colgroup>
+        <thead className="bg-muted/10">
+          <tr className="border-b border-border">
+            {orderedColumns.map((col) => {
+              const isSorted = sort.key === col.key;
+              const isDragOver = dragOverKey === col.key;
+              const isDragging = draggedKey === col.key;
+
+              return (
+                <th
+                  key={col.key}
+                  draggable
+                  onDragStart={handleDragStart(col.key)}
+                  onDragOver={handleDragOver(col.key)}
+                  onDrop={handleDrop(col.key)}
+                  onDragEnd={handleDragEnd}
+                  className={`text-sm font-bold uppercase tracking-wider text-foreground/80 py-4 px-4 select-none whitespace-nowrap transition-colors ${
+                    isDragOver ? "bg-primary/10" : ""
+                  } ${isDragging ? "opacity-40" : ""}`}
+                >
+                  {(() => {
+                    const renderSortIcon = () => {
+                      if (!isSorted) {
+                        return (
+                          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/80 hover:cursor-pointer" />
+                        );
+                      }
+                      if (sort.direction === "asc") {
+                        return (
+                          <ArrowUp className="h-3.5 w-3.5 text-primary hover:cursor-pointer" />
+                        );
+                      }
+                      return (
+                        <ArrowDown className="h-3.5 w-3.5 text-primary hover:cursor-pointer" />
+                      );
+                    };
+
+                    return (
+                      <div
+                        className={`flex items-center gap-1.5 ${alignClass(
+                          col.align
+                        )} ${justifyClass(col.align)}`}
+                      >
+                        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 cursor-grab shrink-0 hover:cursor-grab" />
+                        {col.sortable ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick(col.key)}
+                            className="flex items-center gap-1 hover:text-foreground transition-colors"
+                          >
+                            <span>{col.header}</span>
+                            {renderSortIcon()}
+                          </button>
+                        ) : (
+                          <span>{col.header}</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {paginatedData.map((row) => (
+            <tr
+              key={rowKey(row)}
+              onClick={() => onRowClick?.(row)}
+              className={`border-b border-border hover:bg-muted/30 transition-colors ${
+                onRowClick ? "cursor-pointer" : ""
+              }`}
+            >
+              {orderedColumns.map((col) => (
+                <td
+                  key={col.key}
+                  className={`px-4 py-3 align-middle text-sm ${alignClass(col.align)}`}
+                >
+                  {col.render
+                    ? col.render(row)
+                    : toDisplayString(
+                        (row as Record<string, unknown>)[col.key]
+                      )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  };
+
+  return (
+    <Card className="overflow-hidden bg-card text-card-foreground p-0 gap-0">
+      <div className="overflow-x-auto">{renderTableBody()}</div>
+      {/* Pagination controls */}
+      {!isLoading && sortedData.length > 0 && (
+        <div className="p-4 border-t border-border flex items-center justify-between bg-muted/20">
+          <span className="text-sm font-semibold text-muted-foreground">
+            Showing page {pageIndex + 1} of {pageCount}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+              disabled={pageIndex === 0}
+              className="h-7 w-7 p-0 rounded-xl"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setPageIndex((p) => Math.min(pageCount - 1, p + 1))
+              }
+              disabled={pageIndex >= pageCount - 1}
+              className="h-7 w-7 p-0 rounded-xl"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}

@@ -1,23 +1,6 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  getPaginationRowModel,
-  flexRender,
-  type ColumnDef
-} from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -26,33 +9,35 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogFooter
+  DialogTitle
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CustomTable } from "@/components/ui/table";
+import type { ColumnConfig } from "@/types/tableTypes";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  UserPlus,
-  Shield,
-  Users,
-  RefreshCw,
-  Search,
+  Building2,
   Calendar,
   Crown,
   Eye,
-  Building2,
-  Mail
+  Mail,
+  RefreshCw,
+  Search,
+  Shield,
+  UserPlus,
+  Users
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import * as z from "zod";
 
 // Validation Schema for creating a User / Associate under the firm
 const createMemberSchema = z.object({
@@ -142,10 +127,17 @@ export function AssociatesClient({
     [allMembers]
   );
 
-  const tableMembers = useMemo(
+  const staffMembers = useMemo(
     () => allMembers.filter((m) => m.role !== "OWNER"),
     [allMembers]
   );
+
+  const filteredMembers = useMemo(() => {
+    return staffMembers.filter((m) => {
+      const searchStr = `${m.name || ""} ${m.email} ${m.role}`.toLowerCase();
+      return !globalFilter || searchStr.includes(globalFilter.toLowerCase());
+    });
+  }, [staffMembers, globalFilter]);
 
   // Form for creating new associate/user
   const {
@@ -195,132 +187,103 @@ export function AssociatesClient({
     createMutation.mutate(values);
   }
 
-  // TanStack Table Column Definitions
-  const columns = useMemo<ColumnDef<FirmMember>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: "FULL NAME",
-        cell: ({ row }) => {
-          const member = row.original;
-          const initials = member.name
-            ? member.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .substring(0, 2)
-                .toUpperCase()
-            : member.email.substring(0, 2).toUpperCase();
-          return (
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
-                {initials}
-              </div>
-              <p className="font-bold text-foreground leading-tight">
-                {member.name || "N/A"}
-              </p>
+  const columns: ColumnConfig<FirmMember>[] = [
+    {
+      key: "name",
+      header: "FULL NAME",
+      sortable: true,
+      accessor: (m) => m.name ?? "",
+      render: (m) => {
+        const initials = m.name
+          ? m.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .substring(0, 2)
+              .toUpperCase()
+          : m.email.substring(0, 2).toUpperCase();
+        return (
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
+              {initials}
             </div>
-          );
-        }
-      },
-      {
-        accessorKey: "email",
-        header: "MEMBER EMAIL",
-        cell: ({ row }) => {
-          return (
-            <span className="text-xs text-muted-foreground font-medium">
-              {row.original.email}
-            </span>
-          );
-        }
-      },
-      {
-        accessorKey: "role",
-        header: "ASSIGNED ROLE",
-        cell: ({ row }) => {
-          const role = row.original.role;
-          return (
-            <Badge
-              variant={getBadgeVariant(role)}
-              className="text-xs font-bold"
-            >
-              {role}
-            </Badge>
-          );
-        }
-      },
-      {
-        accessorKey: "isActive",
-        header: "STATUS",
-        cell: ({ row }) => {
-          const active = row.original.isActive;
-          return (
-            <Badge
-              variant={active ? "emerald" : "destructive"}
-              className="text-[10px]"
-            >
-              {active ? "Active" : "Inactive"}
-            </Badge>
-          );
-        }
-      },
-      {
-        accessorKey: "createdAt",
-        header: "CREATED DATE",
-        cell: ({ row }) => {
-          const dateStr = row.original.createdAt;
-          return (
-            <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5 text-primary/70" />
-              {new Date(dateStr).toLocaleDateString()}
-            </span>
-          );
-        }
-      },
-      {
-        id: "actions",
-        header: () => <div className="text-center">ACTIONS</div>,
-        cell: ({ row }) => {
-          return (
-            <div className="text-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedMember(row.original);
-                }}
-                className="h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/10 font-bold gap-1 rounded-xl"
-              >
-                <Eye className="h-3.5 w-3.5" />
-                <span>View</span>
-              </Button>
-            </div>
-          );
-        }
+            <p className="font-bold text-foreground leading-tight">
+              {m.name || "N/A"}
+            </p>
+          </div>
+        );
       }
-    ],
-    []
-  );
-
-  // TanStack Table Instance
-  const table = useReactTable({
-    data: tableMembers,
-    columns,
-    state: {
-      globalFilter
     },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 8
-      }
+    {
+      key: "email",
+      header: "MEMBER EMAIL",
+      sortable: true,
+      accessor: (m) => m.email,
+      render: (m) => (
+        <span className="text-xs text-muted-foreground font-medium">
+          {m.email}
+        </span>
+      )
+    },
+    {
+      key: "role",
+      header: "ASSIGNED ROLE",
+      sortable: true,
+      accessor: (m) => m.role,
+      render: (m) => (
+        <Badge variant={getBadgeVariant(m.role)} className="text-xs font-bold">
+          {m.role}
+        </Badge>
+      )
+    },
+    {
+      key: "isActive",
+      header: "STATUS",
+      sortable: true,
+      accessor: (m) => (m.isActive ? 1 : 0),
+      render: (m) => (
+        <Badge
+          variant={m.isActive ? "emerald" : "destructive"}
+          className="text-[10px]"
+        >
+          {m.isActive ? "Active" : "Inactive"}
+        </Badge>
+      )
+    },
+    {
+      key: "createdAt",
+      header: "CREATED DATE",
+      sortable: true,
+      accessor: (m) => new Date(m.createdAt),
+      render: (m) => (
+        <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5 text-primary/70" />
+          {new Date(m.createdAt).toLocaleDateString()}
+        </span>
+      )
+    },
+    {
+      key: "actions",
+      header: "ACTIONS",
+      align: "center",
+      render: (m) => (
+        <div className="text-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedMember(m);
+            }}
+            className="h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/10 font-bold gap-1 rounded-xl"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            <span>View</span>
+          </Button>
+        </div>
+      )
     }
-  });
+  ];
 
   return (
     <div className="space-y-6">
@@ -429,90 +392,25 @@ export function AssociatesClient({
               Firm Associates & Roster
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              {tableMembers.length} enrolled staff members registered under firm
+              {staffMembers.length} enrolled staff members registered under firm
             </CardDescription>
           </div>
           <Badge variant="navy" className="text-xs">
-            {tableMembers.filter((m) => m.isActive).length} Active Staff
+            {staffMembers.filter((m) => m.isActive).length} Active Staff
           </Badge>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="py-12 text-center text-xs text-muted-foreground font-medium">
-              Loading firm members...
-            </div>
-          ) : table.getRowModel().rows.length === 0 ? (
-            <div className="py-12 text-center text-xs text-muted-foreground font-medium">
-              No staff or associate records found.
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      onClick={() => setSelectedMember(row.original)}
-                      className="cursor-pointer hover:bg-muted/60 transition-colors"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Table Pagination Bar */}
-              <div className="flex items-center justify-between p-4 border-t border-border/60 text-xs text-muted-foreground">
-                <span>
-                  Showing Page {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                    className="h-8 text-xs rounded-xl"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                    className="h-8 text-xs rounded-xl"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+          <CustomTable
+            columns={columns}
+            data={filteredMembers}
+            rowKey={(m) => m.id}
+            isLoading={isLoading}
+            loadingLabel="Loading firm members..."
+            emptyTitle="No staff or associate records found."
+            emptyDescription="Create a new associate to get started."
+            pageSize={8}
+            onRowClick={(m) => setSelectedMember(m)}
+          />
         </CardContent>
       </Card>
 

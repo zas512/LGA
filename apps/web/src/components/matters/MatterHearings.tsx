@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -10,21 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomTable, type ColumnConfig } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -33,23 +19,14 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog";
-import {
-  Gavel,
-  Calendar,
-  Clock,
-  Plus,
-  Loader2,
-  FileText,
-  User,
-  ArrowRight,
-  ExternalLink,
-  Users
-} from "lucide-react";
+import { Gavel, Clock, Plus, Loader2, FileText, Users } from "lucide-react";
 
 // Log Outcome Schema
 const logOutcomeSchema = z.object({
   status: z.enum(["HELD", "ADJOURNED", "SINE_DIE", "DECIDED"]),
-  proceedingsSummary: z.string().min(5, { message: "Proceedings summary must be at least 5 characters" }),
+  proceedingsSummary: z
+    .string()
+    .min(5, { message: "Proceedings summary must be at least 5 characters" }),
   orderSheetUrl: z.string().optional(),
   nextDate: z.string().optional(),
   nextPurpose: z.string().optional(),
@@ -61,7 +38,9 @@ type LogOutcomeValues = z.infer<typeof logOutcomeSchema>;
 // Schedule Hearing Schema
 const scheduleHearingSchema = z.object({
   hearingDate: z.string().min(1, { message: "Hearing date is required" }),
-  purpose: z.string().min(3, { message: "Purpose must be at least 3 characters" }),
+  purpose: z
+    .string()
+    .min(3, { message: "Purpose must be at least 3 characters" }),
   presidingJudge: z.string().optional(),
   attendeeAssociateIds: z.array(z.string()).optional()
 });
@@ -99,13 +78,17 @@ interface MatterHearingsProps {
   userRole: string;
 }
 
-export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) {
+export function MatterHearings({
+  id,
+  userRole
+}: Readonly<MatterHearingsProps>) {
   const queryClient = useQueryClient();
   const [selectedHearing, setSelectedHearing] = useState<Hearing | null>(null);
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
-  const canEdit = userRole === "OWNER" || userRole === "ADMIN" || userRole === "ASSOCIATE";
+  const canEdit =
+    userRole === "OWNER" || userRole === "ADMIN" || userRole === "ASSOCIATE";
 
   // 1. Fetch Hearings list
   const {
@@ -137,6 +120,184 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
   const associateMap = useMemo(() => {
     return new Map(associates.map((a) => [a.id, a.name || a.email]));
   }, [associates]);
+
+  const upcomingColumns: ColumnConfig<Hearing>[] = [
+    {
+      key: "hearingDate",
+      header: "Court Date",
+      sortable: true,
+      accessor: (h) => new Date(h.hearingDate),
+      render: (h) => (
+        <span className="font-bold text-foreground">
+          {new Date(h.hearingDate).toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          })}
+        </span>
+      )
+    },
+    {
+      key: "purpose",
+      header: "Purpose",
+      sortable: true,
+      accessor: (h) => h.purpose,
+      render: (h) => (
+        <span className="font-semibold text-muted-foreground">{h.purpose}</span>
+      )
+    },
+    {
+      key: "presidingJudge",
+      header: "Presiding Judge",
+      sortable: true,
+      accessor: (h) => h.presidingJudge ?? "",
+      render: (h) => (
+        <span className="font-semibold text-muted-foreground">
+          {h.presidingJudge || "N/A"}
+        </span>
+      )
+    },
+    {
+      key: "attendees",
+      header: "Attendees",
+      render: (h) => (
+        <div className="flex flex-wrap gap-1 max-w-50">
+          {h.attendees.map((att) => (
+            <Badge
+              key={att.id}
+              variant="outline"
+              className="text-xs py-0 px-1.5 font-semibold"
+            >
+              {associateMap.get(att.associateId) || "Counsel"}
+            </Badge>
+          ))}
+          {h.attendees.length === 0 && (
+            <span className="text-xs text-muted-foreground">None</span>
+          )}
+        </div>
+      )
+    },
+    ...(canEdit
+      ? [
+          {
+            key: "actions",
+            header: "Action",
+            align: "right" as const,
+            render: (h: Hearing) => (
+              <div className="text-right">
+                <Button
+                  variant="default"
+                  size="xs"
+                  onClick={() => openLogDialog(h)}
+                  className="rounded-xl text-xs font-bold px-2 py-1"
+                >
+                  Log Outcome
+                </Button>
+              </div>
+            )
+          }
+        ]
+      : [])
+  ];
+
+  const pastColumns: ColumnConfig<Hearing>[] = [
+    {
+      key: "hearingDate",
+      header: "Court Date",
+      sortable: true,
+      accessor: (h) => new Date(h.hearingDate),
+      render: (h) => (
+        <span className="font-semibold text-foreground">
+          {new Date(h.hearingDate).toLocaleDateString()}
+        </span>
+      )
+    },
+    {
+      key: "purpose",
+      header: "Purpose",
+      sortable: true,
+      accessor: (h) => h.purpose,
+      render: (h) => (
+        <span className="font-semibold text-muted-foreground">{h.purpose}</span>
+      )
+    },
+    {
+      key: "status",
+      header: "Outcome Status",
+      sortable: true,
+      accessor: (h) => h.status,
+      render: (h) => (
+        <Badge
+          variant={
+            h.status === "HELD"
+              ? "emerald"
+              : h.status === "DECIDED"
+                ? "amber"
+                : "destructive"
+          }
+          className="text-xs font-bold uppercase"
+        >
+          {h.status}
+        </Badge>
+      )
+    },
+    {
+      key: "proceedingsSummary",
+      header: "Proceedings Summary",
+      render: (h) => (
+        <span
+          className="font-medium italic text-muted-foreground max-w-62.5 truncate block"
+          title={h.proceedingsSummary ?? ""}
+        >
+          {h.proceedingsSummary || "N/A"}
+        </span>
+      )
+    },
+    {
+      key: "nextDate",
+      header: "Next Hearing Date",
+      sortable: true,
+      accessor: (h) => (h.nextDate ? new Date(h.nextDate) : null),
+      render: (h) =>
+        h.nextDate ? (
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-primary">
+              {new Date(h.nextDate).toLocaleDateString()}
+            </span>
+            {h.nextPurpose && (
+              <span className="text-xs text-muted-foreground">
+                ({h.nextPurpose})
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-muted-foreground font-semibold">
+            None (Sine Die / Decided)
+          </span>
+        )
+    },
+    {
+      key: "orderSheetUrl",
+      header: "Docs",
+      align: "center",
+      render: (h) =>
+        h.orderSheetUrl ? (
+          <a
+            href={h.orderSheetUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center h-7 w-7 text-primary hover:bg-primary/10 rounded-full border border-border"
+            title="View Order Sheet"
+          >
+            <FileText className="h-3.5 w-3.5" />
+          </a>
+        ) : (
+          <span className="text-sm text-muted-foreground/60 font-bold">-</span>
+        )
+    }
+  ];
 
   // Log Outcome Form
   const {
@@ -186,10 +347,14 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
       if (!selectedHearing) return;
       const payload = {
         ...values,
-        nextDate: values.nextDate ? new Date(values.nextDate).toISOString() : null,
+        nextDate: values.nextDate
+          ? new Date(values.nextDate).toISOString()
+          : null,
         nextPurpose: values.nextPurpose || null,
         orderSheetUrl: values.orderSheetUrl || null,
-        attendeeAssociateIds: values.attendeeAssociateIds?.length ? values.attendeeAssociateIds : undefined
+        attendeeAssociateIds: values.attendeeAssociateIds?.length
+          ? values.attendeeAssociateIds
+          : undefined
       };
       const res = await fetch(`/api/hearings/${selectedHearing.id}`, {
         method: "PATCH",
@@ -221,7 +386,9 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
       const payload = {
         ...values,
         hearingDate: new Date(values.hearingDate).toISOString(),
-        attendeeAssociateIds: values.attendeeAssociateIds?.length ? values.attendeeAssociateIds : undefined
+        attendeeAssociateIds: values.attendeeAssociateIds?.length
+          ? values.attendeeAssociateIds
+          : undefined
       };
       const res = await fetch(`/api/matters/${id}/hearings`, {
         method: "POST",
@@ -278,7 +445,10 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
   const openLogDialog = (hearing: Hearing) => {
     setSelectedHearing(hearing);
     resetLog();
-    setValueLog("attendeeAssociateIds", hearing.attendees.map((a) => a.associateId));
+    setValueLog(
+      "attendeeAssociateIds",
+      hearing.attendees.map((a) => a.associateId)
+    );
     setIsLogOpen(true);
   };
 
@@ -286,13 +456,19 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
   const upcomingHearings = useMemo(() => {
     return hearings
       .filter((h) => h.status === "SCHEDULED")
-      .sort((a, b) => new Date(a.hearingDate).getTime() - new Date(b.hearingDate).getTime());
+      .sort(
+        (a, b) =>
+          new Date(a.hearingDate).getTime() - new Date(b.hearingDate).getTime()
+      );
   }, [hearings]);
 
   const pastHearings = useMemo(() => {
     return hearings
       .filter((h) => h.status !== "SCHEDULED")
-      .sort((a, b) => new Date(b.hearingDate).getTime() - new Date(a.hearingDate).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.hearingDate).getTime() - new Date(a.hearingDate).getTime()
+      );
   }, [hearings]);
 
   return (
@@ -300,8 +476,13 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
       {/* Action Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Court Hearings Ledger</h3>
-          <p className="text-sm text-muted-foreground font-medium">Log courtroom proceedings outcome and maintain next-date (Tareekh-e-Pesh) updates.</p>
+          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+            Court Hearings Ledger
+          </h3>
+          <p className="text-sm text-muted-foreground font-medium">
+            Log courtroom proceedings outcome and maintain next-date
+            (Tareekh-e-Pesh) updates.
+          </p>
         </div>
         <div className="flex gap-2">
           {canEdit && (
@@ -334,67 +515,16 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8 space-y-2">
-              <Loader2 className="h-5 w-5 text-primary animate-spin" />
-              <span className="text-sm text-muted-foreground ml-2">Fetching scheduled court dates...</span>
-            </div>
-          ) : upcomingHearings.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              No upcoming hearings scheduled. Use &ldquo;Schedule Hearing&rdquo; to add one.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow className="border-b border-border hover:bg-transparent">
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Court Date</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Purpose</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Presiding Judge</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Attendees</TableHead>
-                  {canEdit && <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4 text-right">Action</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {upcomingHearings.map((h) => (
-                  <TableRow key={h.id} className="border-b border-border hover:bg-muted/20">
-                    <TableCell className="px-4 py-2 text-sm font-bold text-foreground">
-                      {new Date(h.hearingDate).toLocaleString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      })}
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-sm font-semibold text-muted-foreground">{h.purpose}</TableCell>
-                    <TableCell className="px-4 py-2 text-sm font-semibold text-muted-foreground">{h.presidingJudge || "N/A"}</TableCell>
-                    <TableCell className="px-4 py-2 text-sm font-semibold text-muted-foreground">
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {h.attendees.map((att) => (
-                          <Badge key={att.id} variant="outline" className="text-xs py-0 px-1.5 font-semibold">
-                            {associateMap.get(att.associateId) || "Counsel"}
-                          </Badge>
-                        ))}
-                        {h.attendees.length === 0 && <span className="text-xs text-muted-foreground">None</span>}
-                      </div>
-                    </TableCell>
-                    {canEdit && (
-                      <TableCell className="px-4 py-2 text-right">
-                        <Button
-                          variant="default"
-                          size="xs"
-                          onClick={() => openLogDialog(h)}
-                          className="rounded-xl text-xs font-bold px-2 py-1"
-                        >
-                          Log Outcome
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <CustomTable
+            columns={upcomingColumns}
+            data={upcomingHearings}
+            rowKey={(h) => h.id}
+            isLoading={isLoading}
+            loadingLabel="Fetching scheduled court dates..."
+            emptyTitle="No upcoming hearings scheduled."
+            emptyDescription="Use &ldquo;Schedule Hearing&rdquo; to add one."
+            pageSize={5}
+          />
         </CardContent>
       </Card>
 
@@ -407,74 +537,16 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-5 w-5 text-primary animate-spin" />
-            </div>
-          ) : pastHearings.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              No historical proceedings recorded for this matter.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow className="border-b border-border hover:bg-transparent">
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Court Date</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Purpose</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Outcome Status</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Proceedings Summary</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">Next Hearing Date</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4 text-center">Docs</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pastHearings.map((h) => (
-                  <TableRow key={h.id} className="border-b border-border hover:bg-muted/10">
-                    <TableCell className="px-4 py-2 text-sm font-semibold text-foreground">
-                      {new Date(h.hearingDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-sm font-semibold text-muted-foreground">{h.purpose}</TableCell>
-                    <TableCell className="px-4 py-2 text-sm">
-                      <Badge
-                        variant={h.status === "HELD" ? "emerald" : h.status === "DECIDED" ? "amber" : "destructive"}
-                        className="text-xs font-bold uppercase"
-                      >
-                        {h.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-sm text-muted-foreground font-medium italic max-w-[250px] truncate" title={h.proceedingsSummary ?? ""}>
-                      {h.proceedingsSummary || "N/A"}
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-sm font-bold text-primary">
-                      {h.nextDate ? (
-                        <div className="flex items-center gap-1">
-                          <span>{new Date(h.nextDate).toLocaleDateString()}</span>
-                          {h.nextPurpose && <span className="text-xs text-muted-foreground">({h.nextPurpose})</span>}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground font-semibold">None (Sine Die / Decided)</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-center">
-                      {h.orderSheetUrl ? (
-                        <a
-                          href={h.orderSheetUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center h-7 w-7 text-primary hover:bg-primary/10 rounded-full border border-border"
-                          title="View Order Sheet"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                        </a>
-                      ) : (
-                        <span className="text-sm text-muted-foreground/60 font-bold">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <CustomTable
+            columns={pastColumns}
+            data={pastHearings}
+            rowKey={(h) => h.id}
+            isLoading={isLoading}
+            loadingLabel="Fetching historical proceedings..."
+            emptyTitle="No historical proceedings recorded for this matter."
+            emptyDescription="Historical court hearings will appear here."
+            pageSize={5}
+          />
         </CardContent>
       </Card>
 
@@ -482,16 +554,24 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
       <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
         <DialogContent className="max-w-xl bg-card border-border rounded-2xl shadow-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-foreground">Log Proceedings & Outcomes</DialogTitle>
+            <DialogTitle className="text-lg font-black text-foreground">
+              Log Proceedings & Outcomes
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Submit courtroom outcomes. Entering a next date will auto-schedule the next date (Tareekh-e-Pesh).
+              Submit courtroom outcomes. Entering a next date will auto-schedule
+              the next date (Tareekh-e-Pesh).
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmitLog(onLogSubmit)} className="space-y-4 py-2">
+          <form
+            onSubmit={handleSubmitLog(onLogSubmit)}
+            className="space-y-4 py-2"
+          >
             {/* Status Select */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">Hearing Outcome Status *</Label>
+              <Label className="text-xs font-bold text-foreground">
+                Hearing Outcome Status *
+              </Label>
               <select
                 id="status"
                 {...registerLog("status")}
@@ -499,14 +579,18 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
               >
                 <option value="HELD">Held / Proceeded</option>
                 <option value="ADJOURNED">Adjourned / Postponed</option>
-                <option value="SINE_DIE">Adjourned Sine Die (Indefinitely)</option>
+                <option value="SINE_DIE">
+                  Adjourned Sine Die (Indefinitely)
+                </option>
                 <option value="DECIDED">Decided / Judgment Reserved</option>
               </select>
             </div>
 
             {/* Proceedings Summary */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">Proceedings Summary *</Label>
+              <Label className="text-xs font-bold text-foreground">
+                Proceedings Summary *
+              </Label>
               <textarea
                 id="proceedingsSummary"
                 placeholder="Log details of argument, witness statement, issues framed..."
@@ -515,13 +599,17 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
                 className="w-full text-sm p-3 rounded-xl border border-border bg-card text-foreground font-medium outline-none focus:border-primary focus-visible:ring-primary/40 resize-none"
               />
               {errorsLog.proceedingsSummary && (
-                <p className="text-xs text-destructive font-semibold">{errorsLog.proceedingsSummary.message}</p>
+                <p className="text-xs text-destructive font-semibold">
+                  {errorsLog.proceedingsSummary.message}
+                </p>
               )}
             </div>
 
             {/* Order Sheet URL */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">Court Order Sheet Link (URL)</Label>
+              <Label className="text-xs font-bold text-foreground">
+                Court Order Sheet Link (URL)
+              </Label>
               <Input
                 id="orderSheetUrl"
                 placeholder="e.g. https://storage.lga.dev/orders/order-sheet.pdf"
@@ -533,7 +621,9 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
             {/* Next Date & Purpose (Tareekh-e-Pesh Engine) */}
             <div className="grid grid-cols-2 gap-4 border border-border/80 rounded-xl p-3 bg-muted/10">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">Next Court Date (Tareekh)</Label>
+                <Label className="text-xs font-bold text-foreground">
+                  Next Court Date (Tareekh)
+                </Label>
                 <Input
                   id="nextDate"
                   type="date"
@@ -542,7 +632,9 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">Next Date Purpose</Label>
+                <Label className="text-xs font-bold text-foreground">
+                  Next Date Purpose
+                </Label>
                 <Input
                   id="nextPurpose"
                   placeholder="e.g. Replication / Arguments"
@@ -558,7 +650,7 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
                 <Users className="h-3.5 w-3.5 text-primary" />
                 <span>Log Attending Associates</span>
               </Label>
-              <div className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto">
+              <div className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-30 overflow-y-auto">
                 {associates.map((assoc) => {
                   const isChecked = selectedLogAttendees.includes(assoc.id);
                   return (
@@ -571,8 +663,15 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
                           : "bg-card border-border hover:bg-muted/50"
                       }`}
                     >
-                      <input type="checkbox" checked={isChecked} onChange={() => {}} className="pointer-events-none rounded text-primary" />
-                      <span className="truncate leading-tight">{assoc.name || assoc.email}</span>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        className="pointer-events-none rounded text-primary"
+                      />
+                      <span className="truncate leading-tight">
+                        {assoc.name || assoc.email}
+                      </span>
                     </div>
                   );
                 })}
@@ -614,17 +713,24 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
         <DialogContent className="max-w-xl bg-card border-border rounded-2xl shadow-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-foreground">Schedule Court Hearing</DialogTitle>
+            <DialogTitle className="text-lg font-black text-foreground">
+              Schedule Court Hearing
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
               Formally schedule an upcoming hearing date in the court ledger.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmitSched(onSchedSubmit)} className="space-y-4 py-2">
+          <form
+            onSubmit={handleSubmitSched(onSchedSubmit)}
+            className="space-y-4 py-2"
+          >
             <div className="grid grid-cols-2 gap-4">
               {/* Hearing Date */}
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">Hearing Date & Time *</Label>
+                <Label className="text-xs font-bold text-foreground">
+                  Hearing Date & Time *
+                </Label>
                 <Input
                   id="hearingDate"
                   type="datetime-local"
@@ -632,13 +738,17 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
                   className="text-sm rounded-xl border-border bg-card focus-visible:ring-primary/40"
                 />
                 {errorsSched.hearingDate && (
-                  <p className="text-xs text-destructive font-semibold">{errorsSched.hearingDate.message}</p>
+                  <p className="text-xs text-destructive font-semibold">
+                    {errorsSched.hearingDate.message}
+                  </p>
                 )}
               </div>
 
               {/* Presiding Judge */}
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">Presiding Judge</Label>
+                <Label className="text-xs font-bold text-foreground">
+                  Presiding Judge
+                </Label>
                 <Input
                   id="presidingJudge"
                   placeholder="e.g. Judge West Division"
@@ -650,7 +760,9 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
 
             {/* Purpose */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">Hearing Purpose *</Label>
+              <Label className="text-xs font-bold text-foreground">
+                Hearing Purpose *
+              </Label>
               <Input
                 id="purpose"
                 placeholder="e.g. Replication / Framing of Issues / Cross Exam"
@@ -658,17 +770,19 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
                 className="text-sm rounded-xl border-border bg-card focus-visible:ring-primary/40"
               />
               {errorsSched.purpose && (
-                <p className="text-xs text-destructive font-semibold">{errorsSched.purpose.message}</p>
+                <p className="text-xs text-destructive font-semibold">
+                  {errorsSched.purpose.message}
+                </p>
               )}
             </div>
 
             {/* Assign Attendees checklist */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-foreground block flex items-center gap-1">
+              <Label className="text-xs font-bold text-foreground flex items-center gap-1">
                 <Users className="h-3.5 w-3.5 text-primary" />
                 <span>Assign Counsel to Attend</span>
               </Label>
-              <div className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto">
+              <div className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-30 overflow-y-auto">
                 {associates.map((assoc) => {
                   const isChecked = selectedSchedAttendees.includes(assoc.id);
                   return (
@@ -681,8 +795,15 @@ export function MatterHearings({ id, userRole }: Readonly<MatterHearingsProps>) 
                           : "bg-card border-border hover:bg-muted/50"
                       }`}
                     >
-                      <input type="checkbox" checked={isChecked} onChange={() => {}} className="pointer-events-none rounded text-primary" />
-                      <span className="truncate leading-tight">{assoc.name || assoc.email}</span>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        className="pointer-events-none rounded text-primary"
+                      />
+                      <span className="truncate leading-tight">
+                        {assoc.name || assoc.email}
+                      </span>
                     </div>
                   );
                 })}

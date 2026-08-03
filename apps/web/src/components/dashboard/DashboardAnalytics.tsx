@@ -1,34 +1,24 @@
 "use client";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
-  CardTitle,
-  CardDescription
+  CardTitle
 } from "@/components/ui/card";
+import { PieChart as PieIcon, TrendingUp } from "lucide-react";
 import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, PieChart as PieIcon, MoreVertical } from "lucide-react";
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
 
 const monthlyExpenseData = [
   { month: "Jan", fixed: 45000, manual: 12000 },
@@ -44,45 +34,6 @@ const categoryDistribution = [
   { name: "Subscriptions", value: 18, color: "var(--color-chart-2)" },
   { name: "Office & Rent", value: 15, color: "var(--color-chart-3)" },
   { name: "Legal Travel", value: 12, color: "var(--color-chart-4)" }
-];
-
-const recentInvoices = [
-  {
-    id: "EXP-1047",
-    matter: "Corporate Merger Compliance",
-    associate: "Zain Ali (Lead)",
-    date: "Apr 10, 2026",
-    status: "Pending Approval",
-    badgeVariant: "navy" as const,
-    amount: "$7,700"
-  },
-  {
-    id: "EXP-1046",
-    matter: "Contract Review & Negotiation",
-    associate: "Hammad Laal (Owner)",
-    date: "Apr 07, 2026",
-    status: "Auto-Generated",
-    badgeVariant: "emerald" as const,
-    amount: "$3,500"
-  },
-  {
-    id: "EXP-1045",
-    matter: "ChatGPT Pro & Software Subs",
-    associate: "Assistant Admin",
-    date: "Mar 18, 2026",
-    status: "Auto-Generated",
-    badgeVariant: "emerald" as const,
-    amount: "$2,800"
-  },
-  {
-    id: "EXP-1044",
-    matter: "Intellectual Property Filing",
-    associate: "Associate Counsel",
-    date: "Apr 02, 2026",
-    status: "Overdue",
-    badgeVariant: "destructive" as const,
-    amount: "$5,200"
-  }
 ];
 
 export function DashboardAnalytics() {
@@ -187,12 +138,11 @@ export function DashboardAnalytics() {
                     outerRadius={80}
                     paddingAngle={4}
                     dataKey="value"
-                  >
-                    {categoryDistribution.map((entry) => (
-                      // eslint-disable-next-line @typescript-eslint/no-deprecated
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
+                    shape={(props) => {
+                      const { ...rest } = props;
+                      return <path {...rest} fill={props.payload.color} />;
+                    }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "var(--card)",
@@ -228,75 +178,6 @@ export function DashboardAnalytics() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Data Table Section using Shadcn Table */}
-      <Card className="border-border bg-card text-card-foreground shadow-xs">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <div>
-            <CardTitle className="text-base font-extrabold text-foreground">
-              Recent Expense Ledger & Billings
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground font-medium">
-              Latest firm expenditures logged by associates and administrators
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs font-bold border-border"
-          >
-            View All Records
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-2">ENTRY ID</TableHead>
-                <TableHead>MATTER / CATEGORY</TableHead>
-                <TableHead>LOGGED BY</TableHead>
-                <TableHead>DATE</TableHead>
-                <TableHead>STATUS</TableHead>
-                <TableHead className="text-right pr-4">AMOUNT</TableHead>
-                <TableHead className="text-center">ACTION</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentInvoices.map((inv) => (
-                <TableRow key={inv.id}>
-                  <TableCell className="pl-2 font-mono font-bold text-primary">
-                    {inv.id}
-                  </TableCell>
-                  <TableCell className="font-bold text-foreground">
-                    {inv.matter}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-medium">
-                    {inv.associate}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-medium">
-                    {inv.date}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={inv.badgeVariant}>{inv.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right pr-4 font-black text-foreground">
-                    {inv.amount}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }

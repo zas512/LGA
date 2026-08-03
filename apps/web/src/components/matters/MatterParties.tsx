@@ -18,21 +18,8 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell
-} from "@/components/ui/table";
-import {
-  Users,
-  Plus,
-  Loader2,
-  Phone,
-  Mail,
-} from "lucide-react";
+import { CustomTable, type ColumnConfig } from "@/components/ui/table";
+import { Users, Plus, Loader2, Phone, Mail } from "lucide-react";
 
 // Add Party Schema
 const addPartySchema = z
@@ -203,6 +190,77 @@ export function MatterParties({
     return "outline";
   };
 
+  const columns: ColumnConfig<MatterPartyLink>[] = [
+    {
+      key: "name",
+      header: "Contact Name",
+      sortable: true,
+      accessor: (lnk) => lnk.party?.name || "Unresolved Party",
+      render: (lnk) => {
+        const name = lnk.party?.name || "Unresolved Party";
+        const initials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+        return (
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+              {initials}
+            </div>
+            <span>{name}</span>
+          </div>
+        );
+      }
+    },
+    {
+      key: "partyRole",
+      header: "Case Association Role",
+      sortable: true,
+      accessor: (lnk) => lnk.partyRole,
+      render: (lnk) => (
+        <Badge
+          variant={getRoleBadgeVariant(lnk.partyRole)}
+          className="text-xs font-bold uppercase tracking-wide"
+        >
+          {lnk.partyRole.replace("_", " ")}
+        </Badge>
+      )
+    },
+    {
+      key: "classification",
+      header: "Scope Classification",
+      sortable: true,
+      accessor: (lnk) => (lnk.party?.isExternal ? "External" : "Internal"),
+      render: (lnk) => (
+        <Badge variant="outline" className="text-xs font-bold">
+          {lnk.party?.isExternal ? "External Litigant" : "Internal Client"}
+        </Badge>
+      )
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      render: (lnk) => (
+        <span className="flex items-center gap-1 text-muted-foreground font-semibold">
+          <Phone className="h-3 w-3 text-primary/70" />
+          {lnk.party?.phone || "N/A"}
+        </span>
+      )
+    },
+    {
+      key: "email",
+      header: "Email Address",
+      render: (lnk) => (
+        <span className="flex items-center gap-1 text-muted-foreground font-semibold">
+          <Mail className="h-3 w-3 text-primary/70" />
+          {lnk.party?.email || "N/A"}
+        </span>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -232,98 +290,17 @@ export function MatterParties({
       {/* Litigants Table Card */}
       <Card className="skeuo-card bg-card text-card-foreground">
         <CardContent className="p-0">
-          {matter.parties.length === 0 ? (
-            <div className="text-center p-12 space-y-2">
-              <Users className="h-10 w-10 text-muted-foreground/60 mx-auto" />
-              <p className="font-bold text-foreground text-base">
-                No linked parties
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Link litigants, counsel or witnesses to list them here.
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow className="border-b border-border hover:bg-transparent">
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">
-                    Contact Name
-                  </TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">
-                    Case Association Role
-                  </TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">
-                    Scope Classification
-                  </TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">
-                    Phone
-                  </TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground h-9 px-4">
-                    Email Address
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {matter.parties.map((lnk) => {
-                  const name = lnk.party?.name || "Unresolved Party";
-                  const role = lnk.partyRole;
-                  const isExternal = lnk.party?.isExternal ?? true;
-                  const phone = lnk.party?.phone || "N/A";
-                  const email = lnk.party?.email || "N/A";
-                  const initials = name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .substring(0, 2)
-                    .toUpperCase();
-
-                  return (
-                    <TableRow
-                      key={lnk.id}
-                      className="border-b border-border hover:bg-muted/10"
-                    >
-                      <TableCell className="px-4 py-2 text-sm font-bold text-foreground">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                            {initials}
-                          </div>
-                          <span>{name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-4 py-2 text-sm">
-                        <Badge
-                          variant={getRoleBadgeVariant(role)}
-                          className="text-xs font-bold uppercase tracking-wide"
-                        >
-                          {role.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-4 py-2 text-sm">
-                        <Badge
-                          variant="outline"
-                          className="text-xs font-bold"
-                        >
-                          {isExternal ? "External Litigant" : "Internal Client"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-4 py-2 text-sm text-muted-foreground font-semibold">
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3 text-primary/70" />
-                          {phone}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-4 py-2 text-sm text-muted-foreground font-semibold">
-                        <span className="flex items-center gap-1">
-                          <Mail className="h-3 w-3 text-primary/70" />
-                          {email}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
+          <CustomTable
+            columns={columns}
+            data={matter.parties}
+            rowKey={(lnk) => lnk.id}
+            emptyIcon={
+              <Users className="h-12 w-12 text-muted-foreground/60 mx-auto" />
+            }
+            emptyTitle="No linked parties"
+            emptyDescription="Link litigants, counsel or witnesses to list them here."
+            pageSize={5}
+          />
         </CardContent>
       </Card>
 

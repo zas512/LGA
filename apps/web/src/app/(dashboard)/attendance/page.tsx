@@ -9,14 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
+import { CustomTable, type ColumnConfig } from "@/components/ui/table";
 import {
   AlertCircle,
   Calendar,
@@ -56,12 +49,11 @@ export default function AttendancePage() {
     null
   );
 
-  // Filter & Pagination States
+  // Filter States
   const [filterMonth, setFilterMonth] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(5);
 
   const filteredHistory = useMemo(() => {
@@ -95,13 +87,6 @@ export default function AttendancePage() {
       return true;
     });
   }, [history, filterMonth, filterYear, startDate, endDate]);
-
-  const paginatedHistory = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredHistory.slice(startIndex, startIndex + pageSize);
-  }, [filteredHistory, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredHistory.length / pageSize) || 1;
 
   const handleOpenEdit = (rec: AttendanceRecord) => {
     setEditingRecord(rec);
@@ -226,6 +211,111 @@ export default function AttendancePage() {
         );
     }
   };
+
+  const columns: ColumnConfig<AttendanceRecord>[] = [
+    {
+      key: "date",
+      header: "Date",
+      width: "18%",
+      sortable: true,
+      accessor: (r) => r.date,
+      render: (r) => formatDateFriendly(r.date)
+    },
+    {
+      key: "status",
+      header: "Status",
+      width: "12%",
+      sortable: true,
+      accessor: (r) => r.status,
+      render: (r) => getStatusBadge(r.status)
+    },
+    {
+      key: "checkIn",
+      header: "Check In",
+      width: "12%",
+      render: (r) => (
+        <span className="font-mono text-xs text-foreground">
+          {formatTimeFriendly(r.checkIn)}
+        </span>
+      )
+    },
+    {
+      key: "checkOut",
+      header: "Check Out",
+      width: "12%",
+      render: (r) => (
+        <span className="font-mono text-xs text-foreground">
+          {formatTimeFriendly(r.checkOut)}
+        </span>
+      )
+    },
+    {
+      key: "duration",
+      header: "Duration",
+      width: "12%",
+      render: (r) => (
+        <span className="font-semibold text-xs text-foreground">
+          {getDurationString(r.checkIn, r.checkOut)}
+        </span>
+      )
+    },
+    {
+      key: "source",
+      header: "Source",
+      width: "14%",
+      sortable: true,
+      accessor: (r) => r.source,
+      render: (r) => getSourceBadge(r.source)
+    },
+    {
+      key: "notes",
+      header: "Notes",
+      width: "12%",
+      render: (r) => (
+        <span
+          className="text-xs text-muted-foreground truncate max-w-50 block"
+          title={r.notes}
+        >
+          {r.notes || "-"}
+        </span>
+      )
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      width: "8%",
+      align: "right",
+      render: (r) => (
+        <div
+          className="flex items-center justify-end gap-1.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => handleOpenEdit(r)}
+            className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
+            title="Edit Record"
+          >
+            <Edit2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => {
+              if (
+                confirm(
+                  "Are you sure you want to delete this attendance record?"
+                )
+              ) {
+                deleteRecord(r.id);
+              }
+            }}
+            className="p-1.5 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors cursor-pointer"
+            title="Delete Record"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -413,7 +503,6 @@ export default function AttendancePage() {
               value={filterMonth}
               onChange={(e) => {
                 setFilterMonth(e.target.value);
-                setCurrentPage(1);
               }}
               className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
             >
@@ -446,7 +535,6 @@ export default function AttendancePage() {
               value={filterYear}
               onChange={(e) => {
                 setFilterYear(e.target.value);
-                setCurrentPage(1);
               }}
               className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
             >
@@ -471,7 +559,6 @@ export default function AttendancePage() {
               value={startDate}
               onChange={(e) => {
                 setStartDate(e.target.value);
-                setCurrentPage(1);
               }}
               className="h-8 text-xs bg-card border-border rounded-lg text-foreground"
             />
@@ -491,7 +578,6 @@ export default function AttendancePage() {
               value={endDate}
               onChange={(e) => {
                 setEndDate(e.target.value);
-                setCurrentPage(1);
               }}
               className="h-8 text-xs bg-card border-border rounded-lg text-foreground"
             />
@@ -510,7 +596,6 @@ export default function AttendancePage() {
                 setFilterYear("all");
                 setStartDate("");
                 setEndDate("");
-                setCurrentPage(1);
               }}
               className="h-8 text-xs rounded-lg px-3 hover:bg-muted font-bold cursor-pointer"
             >
@@ -536,164 +621,20 @@ export default function AttendancePage() {
         </div>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/40 border-b border-border">
-                <TableRow>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 pl-6 w-44">
-                    Date
-                  </TableHead>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 w-28">
-                    Status
-                  </TableHead>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 w-28">
-                    Check In
-                  </TableHead>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 w-28">
-                    Check Out
-                  </TableHead>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 w-28">
-                    Duration
-                  </TableHead>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 w-36">
-                    Source
-                  </TableHead>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 max-w-50  ">
-                    Notes
-                  </TableHead>
-                  <TableHead className="text-[11px] font-extrabold uppercase text-muted-foreground py-3 text-right pr-6 w-24">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredHistory.length === 0 ? (
-                  <TableRow>
-                    <td
-                      colSpan={8}
-                      className="py-12 text-center text-xs text-muted-foreground font-medium"
-                    >
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <AlertCircle className="h-8 w-8 text-muted-foreground/50" />
-                        <span>No matching attendance records found.</span>
-                      </div>
-                    </td>
-                  </TableRow>
-                ) : (
-                  paginatedHistory.map((record) => (
-                    <TableRow
-                      key={record.id}
-                      className="border-b border-border hover:bg-muted/20 transition-colors"
-                    >
-                      <TableCell className="font-semibold text-xs py-3.5 pl-6">
-                        {formatDateFriendly(record.date)}
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        {getStatusBadge(record.status)}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs py-3.5 text-foreground">
-                        {formatTimeFriendly(record.checkIn)}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs py-3.5 text-foreground">
-                        {formatTimeFriendly(record.checkOut)}
-                      </TableCell>
-                      <TableCell className="font-semibold text-xs py-3.5 text-foreground">
-                        {getDurationString(record.checkIn, record.checkOut)}
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        {getSourceBadge(record.source)}
-                      </TableCell>
-                      <TableCell
-                        className="text-xs text-muted-foreground py-3.5 max-w-50 truncate"
-                        title={record.notes}
-                      >
-                        {record.notes || "-"}
-                      </TableCell>
-                      <TableCell className="py-3.5 text-right pr-6">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleOpenEdit(record)}
-                            className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
-                            title="Edit Record"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  "Are you sure you want to delete this attendance record?"
-                                )
-                              ) {
-                                deleteRecord(record.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors cursor-pointer"
-                            title="Delete Record"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination Footer */}
-          <div className="flex items-center justify-between border-t border-border px-6 py-4 bg-muted/20">
-            <div className="text-xs text-muted-foreground font-semibold">
-              Showing{" "}
-              {filteredHistory.length === 0
-                ? 0
-                : (currentPage - 1) * pageSize + 1}{" "}
-              to {Math.min(currentPage * pageSize, filteredHistory.length)} of{" "}
-              {filteredHistory.length} records
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="rounded-xl text-xs h-8 cursor-pointer"
-              >
-                Previous
-              </Button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className={`rounded-xl text-xs h-8 w-8 p-0 cursor-pointer ${
-                      currentPage === page
-                        ? "bg-primary text-primary-foreground font-bold"
-                        : ""
-                    }`}
-                  >
-                    {page}
-                  </Button>
-                )
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="rounded-xl text-xs h-8 cursor-pointer"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <CustomTable
+            columns={columns}
+            data={filteredHistory}
+            rowKey={(r) => r.id}
+            emptyIcon={
+              <AlertCircle className="h-12 w-12 text-muted-foreground/60 mx-auto" />
+            }
+            emptyTitle="No matching attendance records found."
+            emptyDescription="Log a new shift or adjust your date filters."
+            pageSize={pageSize}
+          />
         </CardContent>
       </Card>
+
       {/* --- ADD DIALOG --- */}
       <AddDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
 

@@ -131,7 +131,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Analytics & Data Table */}
       <DashboardAnalytics />
     </div>

@@ -32,7 +32,6 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-
   const canManage = userRole === "OWNER" || userRole === "ADMIN";
 
   // Fetch Matters
