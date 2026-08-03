@@ -493,10 +493,7 @@ export default function AttendancePage() {
         width: "8%",
         align: "right",
         render: (r) => (
-          <div
-            className="flex items-center justify-end gap-1.5"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex items-center justify-end gap-1.5">
             <button
               onClick={() => handleOpenEdit(r)}
               className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
