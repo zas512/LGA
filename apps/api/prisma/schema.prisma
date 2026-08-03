@@ -131,8 +131,6 @@ model Attendance {
   createdAt   DateTime         @default(now())
 
   associate Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
-
-  @@unique([associateId, date])
 }
 
 enum AttendanceStatus {

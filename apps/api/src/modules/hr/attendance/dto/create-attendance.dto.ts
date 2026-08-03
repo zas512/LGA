@@ -8,17 +8,15 @@ import {
 } from "class-validator";
 import { AttendanceStatus } from "../../../../generated/prisma/client";
 
-/**
- * These payloads used to be declared inline on the controller as
- * `@Body() body: { date: string; ... }`. Because the global ValidationPipe
- * skips a metatype of `Object`, nothing was validated and the raw strings went
- * straight into `new Date(...)` and Prisma.
- */
 export class CheckInDto {
   @IsString()
   @MaxLength(500)
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  clientDate?: string;
 }
 
 export class CreateAttendanceDto {

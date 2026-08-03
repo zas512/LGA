@@ -3,13 +3,15 @@ import {
   AttendanceRecord,
   useAttendance
 } from "@/components/attendance/AttendanceContext";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CustomTable, type ColumnConfig } from "@/components/ui/table";
+import { CustomTable } from "@/components/ui/table";
+import type { ColumnConfig } from "@/types/tableTypes";
 import {
   AlertCircle,
   Calendar,
@@ -42,6 +44,8 @@ export default function AttendancePage() {
     deleteRecord
   } = useAttendance();
 
+  const { user } = useAuth();
+
   // Modal control states
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -50,11 +54,31 @@ export default function AttendancePage() {
   );
 
   // Filter States
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string>("all");
+  const [timeRange, setTimeRange] = useState<string>("all");
   const [filterMonth, setFilterMonth] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(5);
+
+  // Unique list of associates represented in the history (Owner/Admin view)
+  const uniqueAssociates = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: string; fullName: string; email: string | null }
+    >();
+    history.forEach((rec) => {
+      if (rec.associate) {
+        map.set(rec.associate.id, {
+          id: rec.associate.id,
+          fullName: rec.associate.fullName,
+          email: rec.associate.email
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [history]);
 
   const filteredHistory = useMemo(() => {
     return history.filter((rec) => {
@@ -62,31 +86,69 @@ export default function AttendancePage() {
       const recMonth = recDate.getMonth() + 1; // 1-12
       const recYear = recDate.getFullYear();
 
-      // 1. Month filter
+      // 1. Associate filter (Owner/Admin view)
+      if (
+        (user?.role === "OWNER" || user?.role === "ADMIN") &&
+        selectedAssociateId !== "all" &&
+        rec.associateId !== selectedAssociateId
+      ) {
+        return false;
+      }
+
+      // 2. Month filter
       if (filterMonth !== "all" && recMonth !== Number(filterMonth)) {
         return false;
       }
 
-      // 2. Year filter
+      // 3. Year filter
       if (filterYear !== "all" && recYear !== Number(filterYear)) {
         return false;
       }
 
-      // 3. Start date filter
-      if (startDate) {
+      // 4. Time Range Filter (Quick Filters)
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of today
+
+      if (timeRange === "week") {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (recDate < weekAgo) return false;
+      } else if (timeRange === "month") {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (recDate < monthAgo) return false;
+      } else if (timeRange === "six-months") {
+        const sixMonthsAgo = new Date(
+          now.getTime() - 180 * 24 * 60 * 60 * 1000
+        );
+        if (recDate < sixMonthsAgo) return false;
+      } else if (timeRange === "year") {
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        if (recDate < yearAgo) return false;
+      }
+
+      // 5. Custom Start date filter
+      if (timeRange === "custom" && startDate) {
         const start = new Date(startDate + "T00:00:00");
         if (recDate < start) return false;
       }
 
-      // 4. End date filter
-      if (endDate) {
+      // 6. Custom End date filter
+      if (timeRange === "custom" && endDate) {
         const end = new Date(endDate + "T00:00:00");
         if (recDate > end) return false;
       }
 
       return true;
     });
-  }, [history, filterMonth, filterYear, startDate, endDate]);
+  }, [
+    history,
+    selectedAssociateId,
+    filterMonth,
+    filterYear,
+    timeRange,
+    startDate,
+    endDate,
+    user
+  ]);
 
   const handleOpenEdit = (rec: AttendanceRecord) => {
     setEditingRecord(rec);
@@ -212,110 +274,140 @@ export default function AttendancePage() {
     }
   };
 
-  const columns: ColumnConfig<AttendanceRecord>[] = [
-    {
-      key: "date",
-      header: "Date",
-      width: "18%",
-      sortable: true,
-      accessor: (r) => r.date,
-      render: (r) => formatDateFriendly(r.date)
-    },
-    {
-      key: "status",
-      header: "Status",
-      width: "12%",
-      sortable: true,
-      accessor: (r) => r.status,
-      render: (r) => getStatusBadge(r.status)
-    },
-    {
-      key: "checkIn",
-      header: "Check In",
-      width: "12%",
-      render: (r) => (
-        <span className="font-mono text-xs text-foreground">
-          {formatTimeFriendly(r.checkIn)}
-        </span>
-      )
-    },
-    {
-      key: "checkOut",
-      header: "Check Out",
-      width: "12%",
-      render: (r) => (
-        <span className="font-mono text-xs text-foreground">
-          {formatTimeFriendly(r.checkOut)}
-        </span>
-      )
-    },
-    {
-      key: "duration",
-      header: "Duration",
-      width: "12%",
-      render: (r) => (
-        <span className="font-semibold text-xs text-foreground">
-          {getDurationString(r.checkIn, r.checkOut)}
-        </span>
-      )
-    },
-    {
-      key: "source",
-      header: "Source",
-      width: "14%",
-      sortable: true,
-      accessor: (r) => r.source,
-      render: (r) => getSourceBadge(r.source)
-    },
-    {
-      key: "notes",
-      header: "Notes",
-      width: "12%",
-      render: (r) => (
-        <span
-          className="text-xs text-muted-foreground truncate max-w-50 block"
-          title={r.notes}
-        >
-          {r.notes || "-"}
-        </span>
-      )
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      width: "8%",
-      align: "right",
-      render: (r) => (
-        <div
-          className="flex items-center justify-end gap-1.5"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={() => handleOpenEdit(r)}
-            className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
-            title="Edit Record"
-          >
-            <Edit2 className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => {
-              if (
-                confirm(
-                  "Are you sure you want to delete this attendance record?"
-                )
-              ) {
-                deleteRecord(r.id);
-              }
-            }}
-            className="p-1.5 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors cursor-pointer"
-            title="Delete Record"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )
+  const columns: ColumnConfig<AttendanceRecord>[] = useMemo(() => {
+    const isOwnerOrAdmin = user?.role === "OWNER" || user?.role === "ADMIN";
+
+    const baseCols: ColumnConfig<AttendanceRecord>[] = [
+      {
+        key: "date",
+        header: "Date",
+        width: isOwnerOrAdmin ? "14%" : "18%",
+        sortable: true,
+        accessor: (r) => r.date,
+        render: (r) => formatDateFriendly(r.date)
+      }
+    ];
+
+    if (isOwnerOrAdmin) {
+      baseCols.push({
+        key: "associate",
+        header: "Associate",
+        width: "16%",
+        sortable: true,
+        accessor: (r) => r.associate?.fullName ?? "Unknown",
+        render: (r) => (
+          <div className="flex flex-col">
+            <span className="font-bold text-foreground text-xs leading-tight">
+              {r.associate?.fullName ?? "System / Unknown"}
+            </span>
+            {r.associate?.email && (
+              <span className="text-[10px] text-muted-foreground truncate max-w-40">
+                {r.associate.email}
+              </span>
+            )}
+          </div>
+        )
+      });
     }
-  ];
+
+    return [
+      ...baseCols,
+      {
+        key: "status",
+        header: "Status",
+        width: "12%",
+        sortable: true,
+        accessor: (r) => r.status,
+        render: (r) => getStatusBadge(r.status)
+      },
+      {
+        key: "checkIn",
+        header: "Check In",
+        width: "12%",
+        render: (r) => (
+          <span className="font-mono text-xs text-foreground">
+            {formatTimeFriendly(r.checkIn)}
+          </span>
+        )
+      },
+      {
+        key: "checkOut",
+        header: "Check Out",
+        width: "12%",
+        render: (r) => (
+          <span className="font-mono text-xs text-foreground">
+            {formatTimeFriendly(r.checkOut)}
+          </span>
+        )
+      },
+      {
+        key: "duration",
+        header: "Duration",
+        width: "12%",
+        render: (r) => (
+          <span className="font-semibold text-xs text-foreground">
+            {getDurationString(r.checkIn, r.checkOut)}
+          </span>
+        )
+      },
+      {
+        key: "source",
+        header: "Source",
+        width: isOwnerOrAdmin ? "12%" : "14%",
+        sortable: true,
+        accessor: (r) => r.source,
+        render: (r) => getSourceBadge(r.source)
+      },
+      {
+        key: "notes",
+        header: "Notes",
+        width: "12%",
+        render: (r) => (
+          <span
+            className="text-xs text-muted-foreground truncate max-w-50 block"
+            title={r.notes ?? ""}
+          >
+            {r.notes || "-"}
+          </span>
+        )
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        width: "8%",
+        align: "right",
+        render: (r) => (
+          <div
+            className="flex items-center justify-end gap-1.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => handleOpenEdit(r)}
+              className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
+              title="Edit Record"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => {
+                if (
+                  confirm(
+                    "Are you sure you want to delete this attendance record?"
+                  )
+                ) {
+                  deleteRecord(r.id);
+                }
+              }}
+              className="p-1.5 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors cursor-pointer"
+              title="Delete Record"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )
+      }
+    ];
+  }, [user, deleteRecord]);
 
   return (
     <div className="space-y-6">
@@ -346,7 +438,7 @@ export default function AttendancePage() {
           </CardHeader>
           <CardContent className="space-y-6 flex-1 flex flex-col justify-between pt-0 pb-5">
             <div>
-              {isCheckedIn && currentRecord ? (
+              {isCheckedIn ? (
                 <div className="space-y-2 mt-2">
                   <div className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
                     <span className="inline-block h-3.5 w-3.5 rounded-full bg-amber-500 animate-pulse" />
@@ -355,7 +447,9 @@ export default function AttendancePage() {
                   <div className="text-xs text-muted-foreground font-semibold">
                     Shift started at:{" "}
                     <span className="text-foreground font-bold font-mono">
-                      {formatTimeFriendly(currentRecord.checkIn)}
+                      {currentRecord
+                        ? formatTimeFriendly(currentRecord.checkIn)
+                        : "Loading..."}
                     </span>
                   </div>
                 </div>
@@ -490,110 +584,162 @@ export default function AttendancePage() {
 
         {/* Filter controls bar */}
         <div className="px-6 py-4 border-b border-border bg-muted/20 flex flex-wrap gap-4 items-end">
-          {/* Month Selector */}
+          {/* Associate Selector (Owner/Admin only) */}
+          {(user?.role === "OWNER" || user?.role === "ADMIN") && (
+            <div className="space-y-1.5 min-w-40">
+              <Label
+                htmlFor="filter-associate"
+                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              >
+                Associate
+              </Label>
+              <select
+                id="filter-associate"
+                value={selectedAssociateId}
+                onChange={(e) => setSelectedAssociateId(e.target.value)}
+                className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
+              >
+                <option value="all">All Associates</option>
+                {uniqueAssociates.map((assoc) => (
+                  <option key={assoc.id} value={assoc.id}>
+                    {assoc.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Time Range Selector */}
           <div className="space-y-1.5 min-w-32.5">
             <Label
-              htmlFor="filter-month"
+              htmlFor="filter-range"
               className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
             >
-              Month
+              Time Range
             </Label>
             <select
-              id="filter-month"
-              value={filterMonth}
-              onChange={(e) => {
-                setFilterMonth(e.target.value);
-              }}
+              id="filter-range"
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
               className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
             >
-              <option value="all">All Months</option>
-              <option value="1">January</option>
-              <option value="2">February</option>
-              <option value="3">March</option>
-              <option value="4">April</option>
-              <option value="5">May</option>
-              <option value="6">June</option>
-              <option value="7">July</option>
-              <option value="8">August</option>
-              <option value="9">September</option>
-              <option value="10">October</option>
-              <option value="11">November</option>
-              <option value="12">December</option>
+              <option value="all">All Time</option>
+              <option value="week">Past Week</option>
+              <option value="month">Past Month</option>
+              <option value="six-months">Past 6 Months</option>
+              <option value="year">Past Year</option>
+              <option value="custom">Custom Range</option>
             </select>
           </div>
 
-          {/* Year Selector */}
-          <div className="space-y-1.5 min-w-25">
-            <Label
-              htmlFor="filter-year"
-              className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              Year
-            </Label>
-            <select
-              id="filter-year"
-              value={filterYear}
-              onChange={(e) => {
-                setFilterYear(e.target.value);
-              }}
-              className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
-            >
-              <option value="all">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
-          </div>
+          {/* Month Selector (Custom only) */}
+          {timeRange === "custom" && (
+            <div className="space-y-1.5 min-w-32.5">
+              <Label
+                htmlFor="filter-month"
+                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              >
+                Month
+              </Label>
+              <select
+                id="filter-month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
+              >
+                <option value="all">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
+          )}
 
-          {/* Start Date */}
-          <div className="space-y-1.5 min-w-30">
-            <Label
-              htmlFor="filter-start-date"
-              className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              Start Date
-            </Label>
-            <Input
-              id="filter-start-date"
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-              }}
-              className="h-8 text-xs bg-card border-border rounded-lg text-foreground"
-            />
-          </div>
+          {/* Year Selector (Custom only) */}
+          {timeRange === "custom" && (
+            <div className="space-y-1.5 min-w-25">
+              <Label
+                htmlFor="filter-year"
+                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              >
+                Year
+              </Label>
+              <select
+                id="filter-year"
+                value={filterYear}
+                onChange={(e) => setFilterYear(e.target.value)}
+                className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
+              >
+                <option value="all">All Years</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+              </select>
+            </div>
+          )}
 
-          {/* End Date */}
-          <div className="space-y-1.5 min-w-30">
-            <Label
-              htmlFor="filter-end-date"
-              className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              End Date
-            </Label>
-            <Input
-              id="filter-end-date"
-              type="date"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-              }}
-              className="h-8 text-xs bg-card border-border rounded-lg text-foreground"
-            />
-          </div>
+          {/* Start Date (Custom only) */}
+          {timeRange === "custom" && (
+            <div className="space-y-1.5 min-w-30">
+              <Label
+                htmlFor="filter-start-date"
+                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              >
+                Start Date
+              </Label>
+              <Input
+                id="filter-start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-8 text-xs bg-card border-border rounded-lg text-foreground"
+              />
+            </div>
+          )}
+
+          {/* End Date (Custom only) */}
+          {timeRange === "custom" && (
+            <div className="space-y-1.5 min-w-30">
+              <Label
+                htmlFor="filter-end-date"
+                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              >
+                End Date
+              </Label>
+              <Input
+                id="filter-end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-8 text-xs bg-card border-border rounded-lg text-foreground"
+              />
+            </div>
+          )}
 
           {/* Clear Filters Button */}
-          {(filterMonth !== "all" ||
+          {(selectedAssociateId !== "all" ||
+            filterMonth !== "all" ||
             filterYear !== "all" ||
+            timeRange !== "all" ||
             startDate ||
             endDate) && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
+                setSelectedAssociateId("all");
                 setFilterMonth("all");
                 setFilterYear("all");
+                setTimeRange("all");
                 setStartDate("");
                 setEndDate("");
               }}

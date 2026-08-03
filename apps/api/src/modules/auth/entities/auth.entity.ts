@@ -22,6 +22,9 @@ export class AuthUserEntity {
   firmId: string | null;
 
   @Expose()
+  associateId: string | null;
+
+  @Expose()
   isCheckedIn: boolean;
 }
 

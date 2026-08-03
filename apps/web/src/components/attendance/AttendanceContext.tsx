@@ -1,17 +1,30 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback
+} from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { toast } from "sonner";
 
 export interface AttendanceRecord {
   id: string;
-  date: string; // YYYY-MM-DD
-  checkIn: string; // ISO String
-  checkOut: string | null; // ISO String or null
+  associateId: string;
+  date: string;
+  checkIn: string;
+  checkOut: string | null;
   status: "PRESENT" | "ABSENT" | "HALF_DAY" | "LEAVE";
   source: "MANUAL" | "BIOMETRIC_IMPORT" | "REMOTE_CHECKIN";
   notes?: string;
+  associate?: {
+    id: string;
+    fullName: string;
+    email: string | null;
+  };
 }
 
 interface AttendanceContextType {
@@ -28,17 +41,26 @@ interface AttendanceContextType {
     status: AttendanceRecord["status"],
     notes?: string
   ) => Promise<void>;
-  updateRecord: (id: string, updates: Partial<AttendanceRecord>) => Promise<void>;
+  updateRecord: (
+    id: string,
+    updates: Partial<AttendanceRecord>
+  ) => Promise<void>;
   deleteRecord: (id: string) => Promise<void>;
   fetchHistory: () => Promise<void>;
 }
 
-const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
+const AttendanceContext = createContext<AttendanceContextType | undefined>(
+  undefined
+);
 
-export function AttendanceProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+export function AttendanceProvider({
+  children
+}: Readonly<{ children: React.ReactNode }>) {
   const { user } = useAuth();
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
-  const [currentRecord, setCurrentRecord] = useState<AttendanceRecord | null>(null);
+  const [currentRecord, setCurrentRecord] = useState<AttendanceRecord | null>(
+    null
+  );
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,17 +83,19 @@ export function AttendanceProvider({ children }: Readonly<{ children: React.Reac
 
     setIsLoading(true);
     try {
-      console.log("[AttendanceContext] 🔄 Fetching attendance from /api/attendance");
+      console.log(
+        "[AttendanceContext] 🔄 Fetching attendance from /api/attendance"
+      );
       const res = await fetch("/api/attendance");
       if (!res.ok) {
         throw new Error("Failed to load attendance records");
       }
       const data: AttendanceRecord[] = await res.json();
-      
+
       // Clean dates to local YYYY-MM-DD for consistency
       const formatted = data.map((rec) => {
         // Date from backend might be full ISO, we only want the date portion
-        const dateStr = new Date(rec.date).toISOString().split('T')[0];
+        const dateStr = new Date(rec.date).toISOString().split("T")[0];
         return {
           ...rec,
           date: dateStr
@@ -80,10 +104,12 @@ export function AttendanceProvider({ children }: Readonly<{ children: React.Reac
 
       setHistory(formatted);
 
-      // Find active record (checkOut is null)
-      const active = formatted.find((r) => r.checkOut === null);
+      // Find active record (checkOut is null and belongs to current user)
+      const active = formatted.find(
+        (r) => r.checkOut === null && r.associateId === user.associateId
+      );
       setCurrentRecord(active || null);
-      setIsCheckedIn(active !== null);
+      setIsCheckedIn(active !== undefined);
     } catch (err) {
       console.error("Failed to load attendance logs:", err);
       toast.error("Error loading attendance history");
@@ -99,16 +125,22 @@ export function AttendanceProvider({ children }: Readonly<{ children: React.Reac
 
   // Check In
   const checkIn = async (notes?: string) => {
-    if (currentRecord) {
+    if (isCheckedIn) {
       toast.error("You are already checked in!");
       return;
     }
 
     try {
+      const localDate = new Date();
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, "0");
+      const day = String(localDate.getDate()).padStart(2, "0");
+      const clientDate = `${year}-${month}-${day}`;
+
       const res = await fetch("/api/attendance/check-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes })
+        body: JSON.stringify({ notes, clientDate })
       });
 
       if (!res.ok) {
@@ -127,7 +159,7 @@ export function AttendanceProvider({ children }: Readonly<{ children: React.Reac
 
   // Check Out
   const checkOut = async (notes?: string) => {
-    if (!currentRecord) {
+    if (!isCheckedIn) {
       toast.error("You are not checked in!");
       return;
     }
@@ -202,7 +234,10 @@ export function AttendanceProvider({ children }: Readonly<{ children: React.Reac
   };
 
   // Update Record
-  const updateRecord = async (id: string, updates: Partial<AttendanceRecord>) => {
+  const updateRecord = async (
+    id: string,
+    updates: Partial<AttendanceRecord>
+  ) => {
     try {
       const res = await fetch(`/api/attendance/${id}`, {
         method: "PATCH",
@@ -261,7 +296,11 @@ export function AttendanceProvider({ children }: Readonly<{ children: React.Reac
     [history, isCheckedIn, currentRecord, isLoading, fetchHistory]
   );
 
-  return <AttendanceContext.Provider value={value}>{children}</AttendanceContext.Provider>;
+  return (
+    <AttendanceContext.Provider value={value}>
+      {children}
+    </AttendanceContext.Provider>
+  );
 }
 
 export function useAttendance() {

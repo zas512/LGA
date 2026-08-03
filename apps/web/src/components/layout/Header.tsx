@@ -1,11 +1,11 @@
 "use client";
-import { Search, Bell, Play, Square } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { useAuth } from "@/components/auth/AuthProvider";
 import { useAttendance } from "@/components/attendance/AttendanceContext";
-import { useSelector } from "react-redux";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { Input } from "@/components/ui/input";
 import { RootState } from "@/redux/store";
+import { Bell, Play, Search, Square } from "lucide-react";
+import { useSelector } from "react-redux";
 
 interface HeaderProps {
   title?: string;

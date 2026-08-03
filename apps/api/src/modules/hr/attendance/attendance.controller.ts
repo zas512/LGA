@@ -28,6 +28,11 @@ export class AttendanceController {
     return this.attendanceService.findAllForUser(user);
   }
 
+  @Get("firm")
+  findAllFirm(@CurrentUser() user: JwtPayload): Promise<AttendanceEntity[]> {
+    return this.attendanceService.findAllForFirm(user);
+  }
+
   @Post("check-in")
   checkIn(
     @CurrentUser() user: JwtPayload,

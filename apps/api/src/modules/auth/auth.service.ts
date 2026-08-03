@@ -151,6 +151,7 @@ export class AuthService {
       name: user.name,
       role: user.role,
       firmId: user.firmId,
+      associateId: user.associateId,
       isCheckedIn
     });
   }

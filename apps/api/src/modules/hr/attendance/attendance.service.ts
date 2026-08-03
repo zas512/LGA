@@ -1,30 +1,23 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException
 } from "@nestjs/common";
-import { PrismaService } from "../../../prisma/prisma.service";
 import { toEntities, toEntity } from "../../../common/serialization/serialize";
-import { UsersService } from "../../users/users.service";
-import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
 import type { Prisma } from "../../../generated/prisma/client";
 import {
   AttendanceSource,
   AttendanceStatus
 } from "../../../generated/prisma/client";
+import { PrismaService } from "../../../prisma/prisma.service";
+import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import { UsersService } from "../../users/users.service";
 import { CheckInDto, CreateAttendanceDto } from "./dto/create-attendance.dto";
 import { UpdateAttendanceDto } from "./dto/update-attendance.dto";
 import { AttendanceEntity } from "./entities/attendance.entity";
 
-/** A shift shorter than this is recorded as a half day. */
 const HALF_DAY_THRESHOLD_HOURS = 4;
 
-/**
- * `Attendance.date` is a `@db.Date` column, so it needs an exact UTC midnight.
- * Building it from local components (`new Date(y, m, d)`) shifted the stored
- * day by one for anyone not on UTC.
- */
 function toDateOnly(value: Date): Date {
   return new Date(
     Date.UTC(value.getFullYear(), value.getMonth(), value.getDate())
@@ -68,25 +61,49 @@ export class AttendanceService {
     return toEntities(AttendanceEntity, records);
   }
 
+  async findAllForFirm(user: JwtPayload): Promise<AttendanceEntity[]> {
+    if (user.role !== "OWNER" && user.role !== "ADMIN") {
+      throw new BadRequestException(
+        "Only owners and admins can view firm-wide attendance."
+      );
+    }
+    if (!user.firmId) {
+      return [];
+    }
+    const records = await this.prisma.attendance.findMany({
+      where: {
+        associate: {
+          firmId: user.firmId
+        }
+      },
+      include: {
+        associate: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true
+          }
+        }
+      },
+      orderBy: [{ date: "desc" }, { checkIn: "desc" }]
+    });
+    return toEntities(AttendanceEntity, records);
+  }
+
   async checkIn(user: JwtPayload, dto: CheckInDto): Promise<AttendanceEntity> {
     const associateId = await this.users.resolveAssociateId(user.sub);
     const now = new Date();
-    const date = toDateOnly(now);
+    const date = dto.clientDate
+      ? parseDateOnly(dto.clientDate)
+      : toDateOnly(now);
 
-    // The schema allows one row per associate per day. Looking only for an
-    // *open* shift was not enough: checking in again after checking out hit the
-    // unique constraint and surfaced as an opaque 500.
-    const today = await this.prisma.attendance.findUnique({
-      where: { associateId_date: { associateId, date } },
-      select: { id: true, checkOut: true }
+    // Look for any open shift for this associate (checkOut is null)
+    const openShift = await this.prisma.attendance.findFirst({
+      where: { associateId, checkOut: null }
     });
 
-    if (today) {
-      throw today.checkOut === null
-        ? new BadRequestException("You are already checked in!")
-        : new ConflictException(
-            "Attendance for today has already been recorded. Edit the existing record instead."
-          );
+    if (openShift) {
+      throw new BadRequestException("You are already checked in!");
     }
 
     const record = await this.prisma.attendance.create({
@@ -192,7 +209,10 @@ export class AttendanceService {
     data.status =
       dto.status ?? statusForShift(checkIn, checkOut) ?? record.status;
 
-    const updated = await this.prisma.attendance.update({ where: { id }, data });
+    const updated = await this.prisma.attendance.update({
+      where: { id },
+      data
+    });
     return toEntity(AttendanceEntity, updated);
   }
 

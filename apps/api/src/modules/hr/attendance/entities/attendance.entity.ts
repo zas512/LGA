@@ -1,8 +1,19 @@
-import { Expose } from "class-transformer";
+import { Expose, Type } from "class-transformer";
 import type {
   AttendanceSource,
   AttendanceStatus
 } from "../../../../generated/prisma/client";
+
+export class AssociateMinEntity {
+  @Expose()
+  id: string;
+
+  @Expose()
+  fullName: string;
+
+  @Expose()
+  email: string | null;
+}
 
 export class AttendanceEntity {
   @Expose()
@@ -31,4 +42,8 @@ export class AttendanceEntity {
 
   @Expose()
   createdAt: Date;
+
+  @Expose()
+  @Type(() => AssociateMinEntity)
+  associate?: AssociateMinEntity;
 }

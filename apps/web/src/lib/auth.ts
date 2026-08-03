@@ -6,6 +6,7 @@ export interface User {
   role: "SUPER_ADMIN" | "OWNER" | "ADMIN" | "ASSOCIATE";
   firmId: string | null;
   name?: string | null;
+  associateId?: string | null;
   isCheckedIn?: boolean;
 }
 
