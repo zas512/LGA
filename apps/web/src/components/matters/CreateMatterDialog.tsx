@@ -338,10 +338,17 @@ export function CreateMatterDialog({
 
           {/* Assign Associates Inline */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-foreground block">
+            <Label
+              id="assignAssociatesLabel"
+              className="text-xs font-bold text-foreground block"
+            >
               Assign Associates to Matter
             </Label>
-            <div className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto">
+            <div
+              role="group"
+              aria-labelledby="assignAssociatesLabel"
+              className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto"
+            >
               {allAssociates.length === 0 ? (
                 <span className="text-sm text-muted-foreground col-span-2">
                   No active associates found in firm roster.
@@ -352,8 +359,18 @@ export function CreateMatterDialog({
                   return (
                     <div
                       key={assoc.id}
+                      role="checkbox"
+                      aria-checked={isChecked}
+                      tabIndex={0}
+                      aria-label={assoc.name || assoc.email}
                       onClick={() => handleAssociateToggle(assoc.id)}
-                      className={`flex items-center gap-2 p-2 rounded-lg border text-sm font-semibold cursor-pointer select-none transition-all ${
+                      onKeyDown={(e) => {
+                        if (e.key === " " || e.key === "Enter") {
+                          e.preventDefault();
+                          handleAssociateToggle(assoc.id);
+                        }
+                      }}
+                      className={`flex items-center gap-2 p-2 rounded-lg border text-sm font-semibold cursor-pointer select-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                         isChecked
                           ? "bg-primary/10 border-primary/40 text-primary"
                           : "bg-card border-border hover:bg-muted/50"
@@ -363,6 +380,8 @@ export function CreateMatterDialog({
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => {}} // handled by click
+                        tabIndex={-1}
+                        aria-hidden="true"
                         className="pointer-events-none rounded text-primary"
                       />
                       <div className="truncate">

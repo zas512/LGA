@@ -373,7 +373,7 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
     return (
       <Badge
         variant={variant}
-        className="text-[9px] font-extrabold tracking-wide"
+        className="text-[11px] font-extrabold tracking-wide"
       >
         {prio}
       </Badge>
@@ -388,7 +388,7 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
     else if (status === "IN_PROGRESS") variant = "navy";
 
     return (
-      <Badge variant={variant} className="text-[9px] font-bold uppercase">
+      <Badge variant={variant} className="text-[11px] font-bold uppercase">
         {status.replace("_", " ")}
       </Badge>
     );
@@ -471,8 +471,17 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
             {groupedTasks.pending.map((t) => (
               <Card
                 key={t.id}
+                role="button"
+                tabIndex={0}
+                aria-label={t.title}
                 onClick={() => openDetailDialog(t)}
-                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openDetailDialog(t);
+                  }
+                }}
+                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <h4 className="text-sm font-bold text-foreground truncate">
                   {t.title}
@@ -516,8 +525,17 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
             {groupedTasks.progress.map((t) => (
               <Card
                 key={t.id}
+                role="button"
+                tabIndex={0}
+                aria-label={t.title}
                 onClick={() => openDetailDialog(t)}
-                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openDetailDialog(t);
+                  }
+                }}
+                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <h4 className="text-sm font-bold text-foreground truncate">
                   {t.title}
@@ -547,7 +565,7 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
         {/* UNDER_REVIEW COLUMN */}
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-border/80 pb-2 px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-warning">
               Under Review
             </span>
             <Badge
@@ -561,8 +579,17 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
             {groupedTasks.review.map((t) => (
               <Card
                 key={t.id}
+                role="button"
+                tabIndex={0}
+                aria-label={t.title}
                 onClick={() => openDetailDialog(t)}
-                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openDetailDialog(t);
+                  }
+                }}
+                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <h4 className="text-sm font-bold text-foreground truncate">
                   {t.title}
@@ -592,7 +619,7 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
         {/* COMPLETED COLUMN */}
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-border/80 pb-2 px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-success">
               Completed
             </span>
             <Badge
@@ -606,20 +633,29 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
             {groupedTasks.completed.map((t) => (
               <Card
                 key={t.id}
+                role="button"
+                tabIndex={0}
+                aria-label={t.title}
                 onClick={() => openDetailDialog(t)}
-                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden opacity-80 hover:opacity-100"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openDetailDialog(t);
+                  }
+                }}
+                className="skeuo-card bg-card text-card-foreground p-4 cursor-pointer hover:border-primary/50 relative overflow-hidden opacity-80 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <h4 className="text-sm font-bold text-muted-foreground line-through truncate">
                   {t.title}
                 </h4>
                 {t.completionNotes && (
-                  <p className="text-xs text-emerald-600 bg-emerald-500/5 p-1 rounded border border-emerald-500/10 mt-1 italic line-clamp-1">
+                  <p className="text-xs text-success bg-success/5 p-1 rounded border border-success/10 mt-1 italic line-clamp-1">
                     Proof: &ldquo;{t.completionNotes}&rdquo;
                   </p>
                 )}
                 <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/40 text-xs">
                   <span className="font-semibold text-muted-foreground flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    <CheckCircle2 className="h-3 w-3 text-success" />
                     Completed
                   </span>
                   {getPriorityBadge(t.priority)}
@@ -898,14 +934,14 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
                               status: "UNDER_REVIEW"
                             })
                           }
-                          className="rounded-xl text-xs font-bold text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 border-amber-500/20 px-3 py-1.5"
+                          className="rounded-xl text-xs font-bold text-warning hover:text-warning/80 hover:bg-warning/10 border-warning/20 px-3 py-1.5"
                         >
                           Submit for Review
                         </Button>
                         <Button
                           size="xs"
                           onClick={() => setIsCompleteOpen(true)}
-                          className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5"
+                          className="rounded-xl text-xs font-bold bg-success text-success-foreground hover:bg-success/90 px-3 py-1.5"
                         >
                           Mark Complete
                         </Button>
@@ -932,14 +968,14 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
                             <Button
                               size="xs"
                               onClick={() => setIsCompleteOpen(true)}
-                              className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1 px-3 py-1.5"
+                              className="rounded-xl text-xs font-bold bg-success text-success-foreground hover:bg-success/90 gap-1 px-3 py-1.5"
                             >
                               <ShieldCheck className="h-3 w-3" />
                               <span>Approve & Complete</span>
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-xs text-amber-600 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+                          <span className="text-xs text-warning font-bold bg-warning/10 border border-warning/20 px-2.5 py-1 rounded-lg">
                             Under Review — Awaiting Admin Approval
                           </span>
                         )}
@@ -947,7 +983,7 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
                     )}
 
                     {selectedTask.status === "COMPLETED" && (
-                      <div className="flex items-center gap-1 text-xs text-emerald-600 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-success font-bold bg-success/10 border border-success/20 px-2.5 py-1 rounded-lg">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         <span>Completed & Approved</span>
                       </div>

@@ -254,7 +254,7 @@ export function SelectContent({
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
-  });
+  }, []);
 
   // On open, flip upward when there isn't room below and there's more above.
   useLayoutEffect(() => {

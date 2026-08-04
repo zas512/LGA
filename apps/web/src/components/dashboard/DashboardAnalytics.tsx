@@ -7,7 +7,9 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import type { ExpenseRecord } from "@/app/(dashboard)/dashboard/page";
 import { PieChart as PieIcon, TrendingUp } from "lucide-react";
+import { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -20,23 +22,116 @@ import {
   YAxis
 } from "recharts";
 
-const monthlyExpenseData = [
-  { month: "Jan", fixed: 45000, manual: 12000 },
-  { month: "Feb", fixed: 45000, manual: 18500 },
-  { month: "Mar", fixed: 48000, manual: 14200 },
-  { month: "Apr", fixed: 48000, manual: 22100 },
-  { month: "May", fixed: 52000, manual: 16800 },
-  { month: "Jun", fixed: 52000, manual: 19400 }
+const FIXED_EXPENSE_TYPES = new Set(["FIXED", "SALARY", "PAYROLL"]);
+const CHART_COLORS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)"
 ];
 
-const categoryDistribution = [
-  { name: "Salaries (HR)", value: 55, color: "var(--color-chart-1)" },
-  { name: "Subscriptions", value: 18, color: "var(--color-chart-2)" },
-  { name: "Office & Rent", value: 15, color: "var(--color-chart-3)" },
-  { name: "Legal Travel", value: 12, color: "var(--color-chart-4)" }
-];
+function aggregateExpenses(expenses: ExpenseRecord[]) {
+  const monthlyMap = new Map<string, { fixed: number; manual: number }>();
+  const categoryMap = new Map<string, number>();
 
-export function DashboardAnalytics() {
+  for (const e of expenses) {
+    const amount = Number(e.amount) || 0;
+    if (amount <= 0) continue;
+    const dateStr = e.date || e.createdAt || "";
+    const monthKey = dateStr.slice(0, 7);
+    const isFixed = FIXED_EXPENSE_TYPES.has((e.type ?? "").toUpperCase());
+
+    if (monthKey) {
+      const entry = monthlyMap.get(monthKey) ?? { fixed: 0, manual: 0 };
+      if (isFixed) entry.fixed += amount;
+      else entry.manual += amount;
+      monthlyMap.set(monthKey, entry);
+    }
+
+    const category = e.category?.trim() || "Other";
+    categoryMap.set(category, (categoryMap.get(category) ?? 0) + amount);
+  }
+
+  const monthlyData = [...monthlyMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([monthKey, value]) => ({
+      month: new Date(`${monthKey}-01`).toLocaleDateString(undefined, {
+        month: "short"
+      }),
+      fixed: value.fixed,
+      manual: value.manual
+    }));
+
+  const categoryTotals = [...categoryMap.entries()];
+  const grandTotal =
+    categoryTotals.reduce((sum, [, value]) => sum + value, 0) || 1;
+  const categoryData = categoryTotals
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 8)
+    .map(([name, value], i) => ({
+      name,
+      value: Math.round((value / grandTotal) * 100),
+      color: CHART_COLORS[i % CHART_COLORS.length]
+    }));
+
+  return { monthlyData, categoryData };
+}
+
+function EmptyChartState({
+  title,
+  description
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <Card className="md:col-span-12 border-border bg-card text-card-foreground shadow-xs">
+      <CardHeader>
+        <CardTitle className="text-sm font-bold flex items-center gap-2">
+          <PieIcon className="h-4 w-4 text-primary" />
+          {title}
+        </CardTitle>
+        <CardDescription className="text-xs text-muted-foreground font-medium">
+          {description}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <PieIcon className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm font-bold text-foreground">
+            No expense records yet
+          </p>
+          <p className="text-xs text-muted-foreground max-w-sm">
+            Expense trends and allocation charts will appear here once billing
+            data is recorded for this firm.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DashboardAnalytics({
+  expenses = []
+}: {
+  expenses?: ExpenseRecord[];
+}) {
+  const { monthlyData, categoryData } = useMemo(
+    () => aggregateExpenses(expenses),
+    [expenses]
+  );
+
+  if (monthlyData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <EmptyChartState
+          title="Monthly Financial Overhead"
+          description="Fixed payroll salaries vs manual operational expenses"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Charts Grid */}
@@ -53,13 +148,15 @@ export function DashboardAnalytics() {
                 Fixed payroll salaries vs manual operational expenses
               </CardDescription>
             </div>
-            <Badge variant="navy">2026 Fiscal</Badge>
+            <Badge variant="navy">
+              {new Date().getFullYear()} Fiscal
+            </Badge>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={monthlyExpenseData}
+                  data={monthlyData}
                   margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
                 >
                   <CartesianGrid
@@ -96,6 +193,13 @@ export function DashboardAnalytics() {
                       color: "var(--card-foreground)",
                       fontWeight: 600
                     }}
+                    formatter={(value) =>
+                      new Intl.NumberFormat("en-PK", {
+                        style: "currency",
+                        currency: "PKR",
+                        maximumFractionDigits: 0
+                      }).format(Number(value) || 0)
+                    }
                   />
                   <Bar
                     dataKey="fixed"
@@ -133,11 +237,12 @@ export function DashboardAnalytics() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryDistribution}
+                    data={categoryData}
                     innerRadius={55}
                     outerRadius={80}
                     paddingAngle={4}
                     dataKey="value"
+                    nameKey="name"
                     shape={(props) => {
                       const { ...rest } = props;
                       return <path {...rest} fill={props.payload.color} />;
@@ -152,12 +257,13 @@ export function DashboardAnalytics() {
                       color: "var(--card-foreground)",
                       fontWeight: 600
                     }}
+                    formatter={(value) => `${value}%`}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
-              {categoryDistribution.map((item) => (
+              {categoryData.map((item) => (
                 <div
                   key={item.name}
                   className="flex items-center gap-2 text-xs"

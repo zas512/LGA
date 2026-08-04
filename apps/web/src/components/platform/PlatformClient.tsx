@@ -256,6 +256,7 @@ export function PlatformClient() {
             loadingLabel="Loading firms..."
             emptyTitle="No registered firms found."
             emptyDescription="Create a new firm to get started."
+            caption="Registered tenant firms"
             pageSize={8}
             onRowClick={(firm) => setSelectedFirm(firm)}
           />
@@ -291,7 +292,7 @@ export function PlatformClient() {
                 className="bg-card text-xs rounded-xl"
               />
               {errors.name && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.name.message}
                 </p>
               )}
@@ -312,7 +313,7 @@ export function PlatformClient() {
                 className="bg-card text-xs rounded-xl"
               />
               {errors.ownerName && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.ownerName.message}
                 </p>
               )}
@@ -334,7 +335,7 @@ export function PlatformClient() {
                 className="bg-card text-xs rounded-xl"
               />
               {errors.ownerEmail && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.ownerEmail.message}
                 </p>
               )}
@@ -357,7 +358,7 @@ export function PlatformClient() {
                 className="bg-card text-xs rounded-xl"
               />
               {errors.ownerPassword && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.ownerPassword.message}
                 </p>
               )}
@@ -415,7 +416,7 @@ export function PlatformClient() {
               <div className="space-y-3 pt-2">
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 col-span-2">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <User className="h-3.5 w-3.5 text-primary" />
                       Firm Owner Name
                     </p>
@@ -425,7 +426,7 @@ export function PlatformClient() {
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 col-span-2">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Mail className="h-3.5 w-3.5 text-primary" />
                       Firm Owner Email
                     </p>
@@ -435,7 +436,7 @@ export function PlatformClient() {
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5 text-primary" />
                       Registered Date
                     </p>

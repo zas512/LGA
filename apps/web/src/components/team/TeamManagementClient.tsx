@@ -154,6 +154,7 @@ export function TeamManagementClient() {
         loadingLabel="Loading firm roster..."
         emptyTitle="No team members registered yet."
         emptyDescription="Add a new employee to get started."
+        caption="Team roster"
         pageSize={8}
       />
     );
@@ -263,6 +264,8 @@ export function TeamManagementClient() {
             size="icon"
             onClick={() => refetch()}
             disabled={isRefetching}
+            aria-label="Refresh team list"
+            title="Refresh team list"
             className="rounded-xl text-muted-foreground hover:text-foreground"
           >
             <RefreshCw

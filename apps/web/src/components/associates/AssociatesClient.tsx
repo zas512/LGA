@@ -244,7 +244,7 @@ export function AssociatesClient({
       render: (m) => (
         <Badge
           variant={m.isActive ? "emerald" : "destructive"}
-          className="text-[10px]"
+          className="text-xs"
         >
           {m.isActive ? "Active" : "Inactive"}
         </Badge>
@@ -308,7 +308,7 @@ export function AssociatesClient({
                       variant="navy"
                       className="gap-1 font-extrabold text-xs"
                     >
-                      <Crown className="h-3 w-3 text-amber-500" />
+                      <Crown className="h-3 w-3 text-warning" />
                       FIRM OWNER
                     </Badge>
                   </div>
@@ -347,6 +347,7 @@ export function AssociatesClient({
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              aria-label="Search associates"
               placeholder="Search associates & staff by email, role..."
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
@@ -408,6 +409,7 @@ export function AssociatesClient({
             loadingLabel="Loading firm members..."
             emptyTitle="No staff or associate records found."
             emptyDescription="Create a new associate to get started."
+            caption="Firm members and associates"
             pageSize={8}
             onRowClick={(m) => setSelectedMember(m)}
           />
@@ -447,7 +449,7 @@ export function AssociatesClient({
                 className="bg-card text-xs rounded-xl"
               />
               {errors.name && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.name.message}
                 </p>
               )}
@@ -469,7 +471,7 @@ export function AssociatesClient({
                 className="bg-card text-xs rounded-xl"
               />
               {errors.email && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.email.message}
                 </p>
               )}
@@ -491,7 +493,7 @@ export function AssociatesClient({
                 className="bg-card text-xs rounded-xl"
               />
               {errors.password && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.password.message}
                 </p>
               )}
@@ -514,7 +516,7 @@ export function AssociatesClient({
                 <option value="ADMIN">ADMIN (Operations Assistant)</option>
               </select>
               {errors.role && (
-                <p className="text-[11px] text-destructive font-semibold">
+                <p className="text-xs text-destructive font-semibold">
                   {errors.role.message}
                 </p>
               )}
@@ -584,7 +586,7 @@ export function AssociatesClient({
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   {selectedMember.name && (
                     <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 col-span-2">
-                      <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                         <Users className="h-3.5 w-3.5 text-primary" />
                         Full Name
                       </p>
@@ -595,7 +597,7 @@ export function AssociatesClient({
                   )}
 
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Mail className="h-3.5 w-3.5 text-primary" />
                       Email Address
                     </p>
@@ -605,7 +607,7 @@ export function AssociatesClient({
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Shield className="h-3.5 w-3.5 text-primary" />
                       System Role
                     </p>
@@ -615,7 +617,7 @@ export function AssociatesClient({
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5 text-primary" />
                       Created Date
                     </p>
@@ -625,17 +627,17 @@ export function AssociatesClient({
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Building2 className="h-3.5 w-3.5 text-primary" />
                       Account Status
                     </p>
-                    <p className="font-bold text-emerald-600 mt-1">
+                    <p className="font-bold text-success mt-1">
                       {selectedMember.isActive ? "Active" : "Inactive"}
                     </p>
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <RefreshCw className="h-3.5 w-3.5 text-primary" />
                       Password Status
                     </p>

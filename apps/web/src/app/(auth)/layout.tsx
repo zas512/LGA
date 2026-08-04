@@ -123,16 +123,16 @@ export default function AuthLayout({
           className="object-cover"
         />
         {/* Dim layer */}
-        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-overlay/50" />
         {/* Blue overlay, darkened */}
         <div className="absolute inset-0 bg-primary/70" />
-        <div className="absolute inset-0 bg-linear-to-b from-black/40 via-transparent to-black/60" />
+        <div className="absolute inset-0 bg-linear-to-b from-overlay/40 via-transparent to-overlay/60" />
         {/* Content, above overlays */}
         <div className="relative z-10 flex items-center gap-3 font-sans text-2xl font-bold tracking-tight text-primary-foreground">
           <div>
             <Image
               src="/lgt_white.png"
-              alt=""
+              alt="Laal Global Advisory"
               width={350}
               height={100}
               className="object-contain"

@@ -97,19 +97,19 @@ export function MatterTimeline({ id }: Readonly<MatterTimelineProps>) {
         );
       case "TASK_COMPLETED":
         return (
-          <div className="h-8 w-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="h-8 w-8 rounded-full bg-success/10 border border-success/20 text-success flex items-center justify-center shrink-0">
             <CheckCircle2 className="h-4 w-4" />
           </div>
         );
       case "DOCUMENT_UPLOADED":
         return (
-          <div className="h-8 w-8 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 flex items-center justify-center shrink-0">
+          <div className="h-8 w-8 rounded-full bg-violet/10 border border-violet/20 text-violet flex items-center justify-center shrink-0">
             <FileText className="h-4 w-4" />
           </div>
         );
       case "STAGE_CHANGE":
         return (
-          <div className="h-8 w-8 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
+          <div className="h-8 w-8 rounded-full bg-warning/10 border border-warning/20 text-warning flex items-center justify-center shrink-0">
             <GitBranch className="h-4 w-4" />
           </div>
         );
@@ -172,12 +172,12 @@ export function MatterTimeline({ id }: Readonly<MatterTimelineProps>) {
           <div className="space-y-1">
             <p className="text-sm font-bold text-foreground">
               Task Completed:{" "}
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-success">
                 {data.title}
               </span>
             </p>
             {data.completionNotes && (
-              <p className="text-sm text-muted-foreground bg-emerald-500/5 border border-emerald-500/10 p-2 rounded-lg mt-1 italic">
+              <p className="text-sm text-muted-foreground bg-success/5 border border-success/10 p-2 rounded-lg mt-1 italic">
                 Notes: &ldquo;{data.completionNotes}&rdquo;
               </p>
             )}
@@ -198,7 +198,7 @@ export function MatterTimeline({ id }: Readonly<MatterTimelineProps>) {
           <div className="space-y-1">
             <p className="text-sm font-bold text-foreground">
               Document Version Uploaded:{" "}
-              <span className="text-purple-600 dark:text-purple-400">
+              <span className="text-violet">
                 v{data.versionNumber}
               </span>
             </p>

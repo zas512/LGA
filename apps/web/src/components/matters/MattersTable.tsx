@@ -177,6 +177,7 @@ export function MattersTable({ data, isLoading }: Readonly<MattersTableProps>) {
       }
       emptyTitle="No matters found"
       emptyDescription="Adjust filters or create a new matter to begin."
+      caption="Matters list"
       onRowClick={(m) => {
         window.location.href = `/matters/${m.id}`;
       }}

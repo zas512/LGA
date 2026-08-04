@@ -32,7 +32,7 @@ export function ThemeToggle() {
       title="Toggle Light / Dark theme"
     >
       {isDark ? (
-        <Sun className="h-4 w-4 text-amber-500 transition-transform duration-200 rotate-0 scale-100" />
+        <Sun className="h-4 w-4 text-warning transition-transform duration-200 rotate-0 scale-100" />
       ) : (
         <Moon className="h-4 w-4 text-primary transition-transform duration-200 rotate-0 scale-100" />
       )}

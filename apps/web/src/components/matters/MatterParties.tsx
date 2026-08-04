@@ -300,6 +300,7 @@ export function MatterParties({
             }
             emptyTitle="No linked parties"
             emptyDescription="Link litigants, counsel or witnesses to list them here."
+            caption="Linked matter parties"
             pageSize={5}
           />
         </CardContent>
@@ -321,7 +322,10 @@ export function MatterParties({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
             {/* Case Association Role */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="partyRole"
+                className="text-xs font-bold text-foreground"
+              >
                 Case Association Role *
               </Label>
               <select
@@ -344,10 +348,17 @@ export function MatterParties({
 
             {/* Select existing or create inline */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-foreground">
+              <Label
+                id="contactSourceLabel"
+                className="text-xs font-bold text-foreground"
+              >
                 Contact Source
               </Label>
-              <div className="flex gap-4">
+              <div
+                role="group"
+                aria-labelledby="contactSourceLabel"
+                className="flex gap-4"
+              >
                 <label className="flex items-center gap-1.5 text-sm font-semibold cursor-pointer">
                   <input
                     type="radio"

@@ -28,6 +28,7 @@ export interface CustomTableProps<T> {
   emptyTitle?: string;
   emptyDescription?: string;
   emptyIcon?: ReactNode;
+  caption?: string;
   onRowClick?: (row: T) => void;
   pageSize?: number;
   onColumnOrderChange?: (orderedKeys: string[]) => void;

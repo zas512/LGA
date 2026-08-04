@@ -93,9 +93,9 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 Total Matters
               </p>
-              <h3 className="text-2xl font-black mt-1 text-foreground">
+              <h2 className="text-2xl font-black mt-1 text-foreground">
                 {stats.total}
-              </h3>
+              </h2>
             </div>
             <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
               <Briefcase className="h-5 w-5" />
@@ -109,11 +109,11 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 Active
               </p>
-              <h3 className="text-2xl font-black mt-1 text-emerald-600 dark:text-emerald-500">
+              <h2 className="text-2xl font-black mt-1 text-success">
                 {stats.active}
-              </h3>
+              </h2>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center border border-emerald-500/20">
+            <div className="h-10 w-10 rounded-xl bg-success/10 text-success flex items-center justify-center border border-success/20">
               <Scale className="h-5 w-5" />
             </div>
           </CardContent>
@@ -125,11 +125,11 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 Decided
               </p>
-              <h3 className="text-2xl font-black mt-1 text-amber-600 dark:text-amber-500">
+              <h2 className="text-2xl font-black mt-1 text-warning">
                 {stats.decided}
-              </h3>
+              </h2>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20">
+            <div className="h-10 w-10 rounded-xl bg-warning/10 text-warning flex items-center justify-center border border-warning/20">
               <Gavel className="h-5 w-5" />
             </div>
           </CardContent>
@@ -141,11 +141,11 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 Closed
               </p>
-              <h3 className="text-2xl font-black mt-1 text-rose-600 dark:text-rose-500">
+              <h2 className="text-2xl font-black mt-1 text-destructive">
                 {stats.closed}
-              </h3>
+              </h2>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center border border-rose-500/20">
+            <div className="h-10 w-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center border border-destructive/20">
               <FolderClosed className="h-5 w-5" />
             </div>
           </CardContent>
@@ -156,9 +156,10 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-1 flex-wrap items-center gap-3">
           {/* Search Input */}
-          <div className="w-80 h-10 flex items-center px-3 rounded-xl border border-border bg-card transition-colors hover:border-primary/70 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
+          <div className="w-full max-w-xs sm:w-80 h-10 flex items-center px-3 rounded-xl border border-border bg-card transition-colors hover:border-primary/70 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
             <Search className="size-5 text-muted-foreground" />
             <Input
+              aria-label="Search matters"
               placeholder="Search case #, client, CNR..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
@@ -167,7 +168,7 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
           </div>
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger aria-label="Filter by status" className="w-48">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -180,7 +181,7 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
           </Select>
           {/* Case Type Filter */}
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger aria-label="Filter by case type" className="w-48">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>

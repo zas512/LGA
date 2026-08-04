@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { HelpCircle, LogOut, Settings } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ProfileDropdownProps {
   user: {
@@ -27,6 +27,42 @@ export function ProfileDropdown({
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+  }, []);
+
+  // Close on outside click and Escape; return focus to the trigger on Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        closeMenu();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeMenu();
+        triggerRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen, closeMenu]);
+
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
 
   async function handleLogout() {
     setIsLoading(true);
@@ -40,14 +76,18 @@ export function ProfileDropdown({
 
   return (
     <div
+      ref={containerRef}
       className="relative"
       onMouseEnter={() => setMenuOpen(true)}
-      onMouseLeave={() => setMenuOpen(false)}
+      onMouseLeave={closeMenu}
     >
       {/* Dropdown Menu Card */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
+            id="profile-menu"
+            role="menu"
+            aria-label="Profile actions"
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.95 }}
@@ -63,10 +103,10 @@ export function ProfileDropdown({
               <p className="text-sm font-bold text-foreground truncate">
                 {displayName}
               </p>
-              <p className="text-[11px] text-muted-foreground truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 {user.email}
               </p>
-              <span className="inline-block text-[10px] font-bold text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/50 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 w-max">
+              <span className="inline-block text-xs font-bold text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/50 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 w-max">
                 {user.role === "OWNER" ? "Principle Counsel" : user.role}
               </span>
             </div>
@@ -92,6 +132,7 @@ export function ProfileDropdown({
               >
                 <Link
                   href="/settings"
+                  role="menuitem"
                   className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
                 >
                   <Settings className="h-4 w-4 shrink-0" />
@@ -108,6 +149,7 @@ export function ProfileDropdown({
               >
                 <Link
                   href="/help"
+                  role="menuitem"
                   className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
                 >
                   <HelpCircle className="h-4 w-4 shrink-0" />
@@ -123,6 +165,8 @@ export function ProfileDropdown({
                 }}
               >
                 <button
+                  type="button"
+                  role="menuitem"
                   onClick={handleLogout}
                   disabled={isLoading}
                   className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors mt-1.5 pt-2.5 border-t border-border text-left cursor-pointer"
@@ -137,9 +181,15 @@ export function ProfileDropdown({
       </AnimatePresence>
 
       {/* User Profile Card (Trigger) */}
-      <div
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={toggleMenu}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-controls="profile-menu"
         className={cn(
-          "flex items-center bg-card shadow-xs overflow-hidden transition-all duration-300 cursor-pointer select-none",
+          "flex items-center bg-card shadow-xs overflow-hidden transition-all duration-300 cursor-pointer select-none text-left",
           collapsed
             ? "rounded-full justify-center mx-auto h-10 w-10 border border-border"
             : "px-3 rounded-full gap-3 h-max py-2 w-full border border-border"
@@ -159,7 +209,7 @@ export function ProfileDropdown({
             </p>
           </div>
         )}
-      </div>
+      </button>
     </div>
   );
 }

@@ -304,7 +304,7 @@ export function MatterDocuments({
                       {getCategoryIcon()}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-black text-foreground truncate max-w-[250px]">
+                          <h4 className="text-sm font-black text-foreground truncate max-w-[200px] sm:max-w-[280px]">
                             {doc.title}
                           </h4>
                           <Badge

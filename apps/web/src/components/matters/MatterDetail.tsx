@@ -230,9 +230,18 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
         </CardContent>
       </Card>
 
-      <div className="flex items-center border-b border-border overflow-x-auto gap-1 pb-1">
+      <div
+        role="tablist"
+        aria-label="Matter sections"
+        className="flex items-center border-b border-border overflow-x-auto gap-1 pb-1"
+      >
         <Button
           variant="ghost"
+          role="tab"
+          id="tab-overview"
+          aria-selected={activeTab === "overview"}
+          aria-controls="panel-overview"
+          tabIndex={activeTab === "overview" ? 0 : -1}
           onClick={() => setActiveTab("overview")}
           className={`rounded-xl text-sm font-bold px-4 py-2 h-9 shrink-0 ${
             activeTab === "overview"
@@ -246,6 +255,11 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
 
         <Button
           variant="ghost"
+          role="tab"
+          id="tab-timeline"
+          aria-selected={activeTab === "timeline"}
+          aria-controls="panel-timeline"
+          tabIndex={activeTab === "timeline" ? 0 : -1}
           onClick={() => setActiveTab("timeline")}
           className={`rounded-xl text-sm font-bold px-4 py-2 h-9 shrink-0 ${
             activeTab === "timeline"
@@ -259,6 +273,11 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
 
         <Button
           variant="ghost"
+          role="tab"
+          id="tab-hearings"
+          aria-selected={activeTab === "hearings"}
+          aria-controls="panel-hearings"
+          tabIndex={activeTab === "hearings" ? 0 : -1}
           onClick={() => setActiveTab("hearings")}
           className={`rounded-xl text-sm font-bold px-4 py-2 h-9 shrink-0 ${
             activeTab === "hearings"
@@ -272,6 +291,11 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
 
         <Button
           variant="ghost"
+          role="tab"
+          id="tab-tasks"
+          aria-selected={activeTab === "tasks"}
+          aria-controls="panel-tasks"
+          tabIndex={activeTab === "tasks" ? 0 : -1}
           onClick={() => setActiveTab("tasks")}
           className={`rounded-xl text-sm font-bold px-4 py-2 h-9 shrink-0 ${
             activeTab === "tasks"
@@ -285,6 +309,11 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
 
         <Button
           variant="ghost"
+          role="tab"
+          id="tab-documents"
+          aria-selected={activeTab === "documents"}
+          aria-controls="panel-documents"
+          tabIndex={activeTab === "documents" ? 0 : -1}
           onClick={() => setActiveTab("documents")}
           className={`rounded-xl text-sm font-bold px-4 py-2 h-9 shrink-0 ${
             activeTab === "documents"
@@ -298,6 +327,11 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
 
         <Button
           variant="ghost"
+          role="tab"
+          id="tab-parties"
+          aria-selected={activeTab === "parties"}
+          aria-controls="panel-parties"
+          tabIndex={activeTab === "parties" ? 0 : -1}
           onClick={() => setActiveTab("parties")}
           className={`rounded-xl text-sm font-bold px-4 py-2 h-9 shrink-0 ${
             activeTab === "parties"
@@ -310,7 +344,13 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
         </Button>
       </div>
 
-      <div className="pt-2">
+      <div
+        role="tabpanel"
+        id={`panel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+        tabIndex={0}
+        className="pt-2"
+      >
         {activeTab === "overview" && <MatterOverview matter={matter} />}
         {activeTab === "timeline" && <MatterTimeline id={id} />}
         {activeTab === "hearings" && (

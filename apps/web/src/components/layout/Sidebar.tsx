@@ -6,7 +6,6 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
   LayoutDashboard,
   Scale,
   Users
@@ -69,12 +68,6 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       roles: ["OWNER", "ADMIN", "ASSOCIATE"]
     },
     {
-      title: "Expenses & Billing",
-      href: "/expenses",
-      icon: CreditCard,
-      roles: ["OWNER", "ADMIN"]
-    },
-    {
       title: "Firms Management",
       href: "/platform",
       icon: Building2,
@@ -95,19 +88,21 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
   const userInitials = getInitials(displayName);
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{
-        width: collapsed ? "4.5rem" : "16rem",
-        padding: collapsed ? "0.75rem" : "1.25rem"
-      }}
-      transition={{ type: "spring", stiffness: 380, damping: 35, mass: 0.75 }}
-      className="shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col justify-between min-h-screen text-sidebar-foreground relative overflow-visible"
+    <aside
+      className={cn(
+        "shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col justify-between min-h-screen text-sidebar-foreground relative overflow-visible transition-[width,padding] duration-200 ease-out",
+        collapsed ? "w-[4.5rem] p-3" : "w-64 p-5"
+      )}
     >
       {/* Floating Collapse Toggle Button */}
       <button
+        type="button"
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute top-4 -right-3 z-40 h-6 w-6 rounded-full bg-card border border-border shadow-xs flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 transition-all"
+        aria-label={
+          collapsed ? "Expand sidebar" : "Collapse sidebar"
+        }
+        aria-expanded={!collapsed}
+        className="absolute top-4 -right-3 z-40 h-8 w-8 rounded-full bg-card border border-border shadow-xs flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 transition-all"
         title={
           collapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"
         }
@@ -133,7 +128,7 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
           {collapsed ? (
             <Image
               src="/laal_icon.png"
-              alt=""
+              alt="LGA"
               width={30}
               height={30}
               className="object-contain"
@@ -142,14 +137,14 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
             <>
               <Image
                 src="/lgt_black.png"
-                alt=""
+                alt="Laal Global Advisory"
                 width={300}
                 height={100}
                 className="object-contain dark:hidden"
               />
               <Image
                 src="/lgt_white.png"
-                alt=""
+                alt="Laal Global Advisory"
                 width={300}
                 height={100}
                 className="object-contain hidden dark:block"
@@ -164,7 +159,7 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
           onMouseLeave={() => setHoveredIndex(null)}
         >
           {!collapsed && (
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-3 pb-1">
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground px-3 pb-1">
               Navigation
             </p>
           )}
@@ -176,6 +171,7 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   onMouseEnter={() => setHoveredIndex(index)}
                   className={cn(
                     "relative flex items-center rounded-xl text-xs font-semibold outline-none transition-colors",
@@ -255,6 +251,6 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
           displayName={displayName}
         />
       </div>
-    </motion.aside>
+    </aside>
   );
 }

@@ -341,13 +341,13 @@ export default function AttendancePage() {
     switch (status) {
       case "PRESENT":
         return (
-          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+          <Badge className="bg-success/10 text-success border border-success/20">
             Present
           </Badge>
         );
       case "HALF_DAY":
         return (
-          <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+          <Badge className="bg-warning/10 text-warning border border-warning/20">
             Half Day
           </Badge>
         );
@@ -359,7 +359,7 @@ export default function AttendancePage() {
         );
       case "LEAVE":
         return (
-          <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25">
+          <Badge className="bg-info/10 text-info border border-info/20">
             On Leave
           </Badge>
         );
@@ -371,19 +371,19 @@ export default function AttendancePage() {
     switch (source) {
       case "BIOMETRIC_IMPORT":
         return (
-          <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-violet bg-violet/10 border border-violet/20 px-2 py-0.5 rounded-full">
             Biometric Sync
           </span>
         );
       case "REMOTE_CHECKIN":
         return (
-          <span className="text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-teal bg-teal/10 border border-teal/20 px-2 py-0.5 rounded-full">
             Web Portal
           </span>
         );
       case "MANUAL":
         return (
-          <span className="text-[10px] font-bold text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">
             Manual Log
           </span>
         );
@@ -417,7 +417,7 @@ export default function AttendancePage() {
               {r.associate?.fullName ?? "System / Unknown"}
             </span>
             {r.associate?.email && (
-              <span className="text-[10px] text-muted-foreground truncate max-w-40">
+              <span className="text-xs text-muted-foreground truncate max-w-40">
                 {r.associate.email}
               </span>
             )}
@@ -533,17 +533,17 @@ export default function AttendancePage() {
         {/* Active Shift Card */}
         <Card className="md:col-span-1 border-border bg-card shadow-xs relative overflow-hidden flex flex-col justify-between">
           <div
-            className={`absolute top-0 left-0 right-0 h-1.5 ${isCheckedIn ? "bg-amber-500" : "bg-emerald-500"}`}
+            className={`absolute top-0 left-0 right-0 h-1.5 ${isCheckedIn ? "bg-warning" : "bg-success"}`}
           />
           <CardHeader className="pt-5 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Active Clock Status</span>
               {isCheckedIn ? (
-                <span className="text-[10px] text-amber-500 border border-amber-500/25 bg-amber-500/5 px-2 py-0.5 rounded-full lowercase font-bold font-mono">
+                <span className="text-xs text-warning border border-warning/20 bg-warning/5 px-2 py-0.5 rounded-full lowercase font-bold font-mono">
                   On Duty
                 </span>
               ) : (
-                <span className="text-[10px] text-emerald-500 border border-emerald-500/25 bg-emerald-500/5 px-2 py-0.5 rounded-full lowercase font-bold font-mono">
+                <span className="text-xs text-success border border-success/20 bg-success/5 px-2 py-0.5 rounded-full lowercase font-bold font-mono">
                   Off Duty
                 </span>
               )}
@@ -554,7 +554,7 @@ export default function AttendancePage() {
               {isCheckedIn ? (
                 <div className="space-y-2 mt-2">
                   <div className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
-                    <span className="inline-block h-3.5 w-3.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="inline-block h-3.5 w-3.5 rounded-full bg-warning animate-pulse" />
                     <span>ON DUTY</span>
                   </div>
                   <div className="text-xs text-muted-foreground font-semibold">
@@ -593,7 +593,7 @@ export default function AttendancePage() {
               ) : (
                 <Button
                   onClick={() => checkIn()}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-5 text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full bg-success text-success-foreground hover:bg-success/90 rounded-xl py-5 text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />
                   Clock In & Start Shift
@@ -604,7 +604,7 @@ export default function AttendancePage() {
         </Card>
 
         {/* Stats Metrics Cards */}
-        <div className="md:col-span-2 grid gap-4 grid-cols-2">
+        <div className="md:col-span-2 grid gap-4 grid-cols-1 sm:grid-cols-2">
           {/* Card 1: Hours worked */}
           <Card className="border border-border bg-card shadow-xs relative overflow-hidden flex flex-col justify-between">
             <CardHeader className="pb-2 pt-4">
@@ -617,7 +617,7 @@ export default function AttendancePage() {
               <div className="text-3xl font-black text-foreground tracking-tight">
                 {stats.totalHours} hrs
               </div>
-              <p className="text-[11px] text-muted-foreground font-semibold mt-1">
+              <p className="text-xs text-muted-foreground font-semibold mt-1">
                 Accumulated across {stats.totalCompleted} completed shifts
               </p>
             </CardContent>
@@ -628,14 +628,14 @@ export default function AttendancePage() {
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                 <span>Days Accounted</span>
-                <UserCheck className="h-4 w-4 text-emerald-500" />
+                <UserCheck className="h-4 w-4 text-success" />
               </CardTitle>
             </CardHeader>
             <CardContent className="pb-4">
               <div className="text-3xl font-black text-foreground tracking-tight">
                 {stats.presentCount} days
               </div>
-              <p className="text-[11px] text-emerald-500 font-semibold mt-1">
+              <p className="text-xs text-success font-semibold mt-1">
                 Active in-office or remote logs
               </p>
             </CardContent>
@@ -646,14 +646,14 @@ export default function AttendancePage() {
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                 <span>Avg. Shift Duration</span>
-                <TrendingUp className="h-4 w-4 text-teal-500" />
+                <TrendingUp className="h-4 w-4 text-teal" />
               </CardTitle>
             </CardHeader>
             <CardContent className="pb-4">
               <div className="text-3xl font-black text-foreground tracking-tight">
                 {stats.avgDuration} hrs
               </div>
-              <p className="text-[11px] text-muted-foreground font-semibold mt-1">
+              <p className="text-xs text-muted-foreground font-semibold mt-1">
                 Standard shift target: 8.0 hrs
               </p>
             </CardContent>
@@ -662,10 +662,10 @@ export default function AttendancePage() {
           {/* Card 4: Action Card */}
           <Card className="border border-primary/20 bg-primary/5 shadow-xs flex flex-col justify-between items-start p-5 rounded-2xl">
             <div className="space-y-1">
-              <h3 className="font-extrabold text-sm text-foreground">
+              <h2 className="font-extrabold text-sm text-foreground">
                 Missed checking in?
-              </h3>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
+              </h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Log attendance manually for past shifts or offsite assignments.
               </p>
             </div>
@@ -702,7 +702,7 @@ export default function AttendancePage() {
             <div className="space-y-1.5 min-w-40">
               <Label
                 htmlFor="filter-associate"
-                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 Associate
               </Label>
@@ -726,7 +726,7 @@ export default function AttendancePage() {
           <div className="space-y-1.5 min-w-32.5">
             <Label
               htmlFor="filter-range"
-              className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
             >
               Time Range
             </Label>
@@ -750,7 +750,7 @@ export default function AttendancePage() {
             <div className="space-y-1.5 min-w-32.5">
               <Label
                 htmlFor="filter-month"
-                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 Month
               </Label>
@@ -782,7 +782,7 @@ export default function AttendancePage() {
             <div className="space-y-1.5 min-w-25">
               <Label
                 htmlFor="filter-year"
-                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 Year
               </Label>
@@ -805,7 +805,7 @@ export default function AttendancePage() {
             <div className="space-y-1.5 min-w-30">
               <Label
                 htmlFor="filter-start-date"
-                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 Start Date
               </Label>
@@ -824,7 +824,7 @@ export default function AttendancePage() {
             <div className="space-y-1.5 min-w-30">
               <Label
                 htmlFor="filter-end-date"
-                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 End Date
               </Label>
@@ -864,10 +864,11 @@ export default function AttendancePage() {
 
           {/* Page Size Selector */}
           <div className="ml-auto space-y-1.5">
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block text-right">
+            <Label htmlFor="attendancePageSize" className="text-xs font-bold uppercase tracking-wider text-muted-foreground block text-right">
               Show
             </Label>
             <select
+              id="attendancePageSize"
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
               className="h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
@@ -889,6 +890,7 @@ export default function AttendancePage() {
             }
             emptyTitle="No matching attendance records found."
             emptyDescription="Log a new shift or adjust your date filters."
+            caption="Attendance history"
             pageSize={pageSize}
           />
         </CardContent>

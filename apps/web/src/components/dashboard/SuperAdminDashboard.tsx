@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Building2, ShieldCheck, Activity, Users, Calendar } from "lucide-react";
-import { Header } from "@/components/layout/Header";
+import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 
 interface Firm {
   id: string;
@@ -28,11 +28,7 @@ export function SuperAdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <Header
-        userRole="SUPER_ADMIN"
-        title="Platform Admin Dashboard"
-        breadcrumb="Overview"
-      />
+      <HeaderUpdater title="Platform Admin Dashboard" breadcrumb="Overview" />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Metric 1 */}
@@ -53,7 +49,7 @@ export function SuperAdminDashboard() {
             <div className="mt-2.5 h-1.5 w-full bg-muted rounded-full overflow-hidden">
               <div className="h-full bg-primary w-[100%]" />
             </div>
-            <p className="text-[11px] text-muted-foreground font-semibold mt-2">
+            <p className="text-xs text-muted-foreground font-semibold mt-2">
               Multi-tenant system active
             </p>
           </CardContent>
@@ -77,7 +73,7 @@ export function SuperAdminDashboard() {
             <div className="mt-2.5 h-1.5 w-full bg-muted rounded-full overflow-hidden">
               <div className="h-full bg-primary w-[100%]" />
             </div>
-            <p className="text-[11px] text-muted-foreground font-semibold mt-2">
+            <p className="text-xs text-muted-foreground font-semibold mt-2">
               Tenant database isolation lock active
             </p>
           </CardContent>
@@ -95,14 +91,15 @@ export function SuperAdminDashboard() {
             </div>
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-3xl font-black text-foreground tracking-tight">
-              99.9%
+            <div className="text-2xl font-black text-success tracking-tight flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-success animate-pulse" />
+              Operational
             </div>
             <div className="mt-2.5 h-1.5 w-full bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary w-[99%]" />
+              <div className="h-full bg-success w-[100%]" />
             </div>
-            <p className="text-[11px] text-muted-foreground font-semibold mt-2">
-              All services operational
+            <p className="text-xs text-muted-foreground font-semibold mt-2">
+              All platform services reporting healthy
             </p>
           </CardContent>
         </Card>
@@ -122,7 +119,7 @@ export function SuperAdminDashboard() {
             <div className="text-xl font-extrabold text-foreground truncate">
               Global Admin
             </div>
-            <p className="text-[11px] text-muted-foreground font-semibold mt-3 truncate">
+            <p className="text-xs text-muted-foreground font-semibold mt-3 truncate">
               Full system control access
             </p>
           </CardContent>
@@ -155,10 +152,10 @@ export function SuperAdminDashboard() {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-foreground">{firm.name}</p>
-                        <p className="text-[10px] text-muted-foreground font-medium">Owner: {firm.ownerName} ({firm.ownerEmail})</p>
+                        <p className="text-xs text-muted-foreground font-medium">Owner: {firm.ownerName} ({firm.ownerEmail})</p>
                       </div>
                     </div>
-                    <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {new Date(firm.createdAt).toLocaleDateString()}
                     </span>

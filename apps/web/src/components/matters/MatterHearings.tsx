@@ -289,7 +289,7 @@ export function MatterHearings({
             href={h.orderSheetUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center h-7 w-7 text-primary hover:bg-primary/10 rounded-full border border-border"
+            className="inline-flex items-center justify-center h-8 w-8 text-primary hover:bg-primary/10 rounded-full border border-border"
             title="View Order Sheet"
           >
             <FileText className="h-3.5 w-3.5" />
@@ -524,6 +524,7 @@ export function MatterHearings({
             loadingLabel="Fetching scheduled court dates..."
             emptyTitle="No upcoming hearings scheduled."
             emptyDescription="Use &ldquo;Schedule Hearing&rdquo; to add one."
+            caption="Upcoming court hearings"
             pageSize={5}
           />
         </CardContent>
@@ -546,6 +547,7 @@ export function MatterHearings({
             loadingLabel="Fetching historical proceedings..."
             emptyTitle="No historical proceedings recorded for this matter."
             emptyDescription="Historical court hearings will appear here."
+            caption="Past court hearings"
             pageSize={5}
           />
         </CardContent>
@@ -570,7 +572,10 @@ export function MatterHearings({
           >
             {/* Status Select */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="status"
+                className="text-xs font-bold text-foreground"
+              >
                 Hearing Outcome Status *
               </Label>
               <select
@@ -589,7 +594,10 @@ export function MatterHearings({
 
             {/* Proceedings Summary */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="proceedingsSummary"
+                className="text-xs font-bold text-foreground"
+              >
                 Proceedings Summary *
               </Label>
               <textarea
@@ -608,7 +616,10 @@ export function MatterHearings({
 
             {/* Order Sheet URL */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="orderSheetUrl"
+                className="text-xs font-bold text-foreground"
+              >
                 Court Order Sheet Link (URL)
               </Label>
               <Input
@@ -622,7 +633,10 @@ export function MatterHearings({
             {/* Next Date & Purpose (Tareekh-e-Pesh Engine) */}
             <div className="grid grid-cols-2 gap-4 border border-border/80 rounded-xl p-3 bg-muted/10">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">
+                <Label
+                  htmlFor="nextDate"
+                  className="text-xs font-bold text-foreground"
+                >
                   Next Court Date (Tareekh)
                 </Label>
                 <Input
@@ -633,7 +647,10 @@ export function MatterHearings({
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">
+                <Label
+                  htmlFor="nextPurpose"
+                  className="text-xs font-bold text-foreground"
+                >
                   Next Date Purpose
                 </Label>
                 <Input
@@ -647,18 +664,35 @@ export function MatterHearings({
 
             {/* Attendance checklist */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-foreground block flex items-center gap-1">
+              <p
+                id="logAttendeesLabel"
+                className="text-xs font-bold text-foreground flex items-center gap-1"
+              >
                 <Users className="h-3.5 w-3.5 text-primary" />
                 <span>Log Attending Associates</span>
-              </Label>
-              <div className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-30 overflow-y-auto">
+              </p>
+              <div
+                role="group"
+                aria-labelledby="logAttendeesLabel"
+                className="border border-border rounded-xl p-3 bg-muted/20 grid grid-cols-2 gap-2 max-h-30 overflow-y-auto"
+              >
                 {associates.map((assoc) => {
                   const isChecked = selectedLogAttendees.includes(assoc.id);
                   return (
                     <div
                       key={assoc.id}
+                      role="checkbox"
+                      aria-checked={isChecked}
+                      tabIndex={0}
+                      aria-label={assoc.name || assoc.email}
                       onClick={() => handleAttendeeToggleLog(assoc.id)}
-                      className={`flex items-center gap-2 p-2 rounded-lg border text-sm font-semibold cursor-pointer select-none transition-all ${
+                      onKeyDown={(e) => {
+                        if (e.key === " " || e.key === "Enter") {
+                          e.preventDefault();
+                          handleAttendeeToggleLog(assoc.id);
+                        }
+                      }}
+                      className={`flex items-center gap-2 p-2 rounded-lg border text-sm font-semibold cursor-pointer select-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                         isChecked
                           ? "bg-primary/10 border-primary/40 text-primary"
                           : "bg-card border-border hover:bg-muted/50"
@@ -668,6 +702,8 @@ export function MatterHearings({
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => {}}
+                        tabIndex={-1}
+                        aria-hidden="true"
                         className="pointer-events-none rounded text-primary"
                       />
                       <span className="truncate leading-tight">
@@ -729,7 +765,10 @@ export function MatterHearings({
             <div className="grid grid-cols-2 gap-4">
               {/* Hearing Date */}
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">
+                <Label
+                  htmlFor="hearingDate"
+                  className="text-xs font-bold text-foreground"
+                >
                   Hearing Date & Time *
                 </Label>
                 <Input
@@ -747,7 +786,10 @@ export function MatterHearings({
 
               {/* Presiding Judge */}
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-foreground">
+                <Label
+                  htmlFor="presidingJudge"
+                  className="text-xs font-bold text-foreground"
+                >
                   Presiding Judge
                 </Label>
                 <Input
@@ -789,8 +831,18 @@ export function MatterHearings({
                   return (
                     <div
                       key={assoc.id}
+                      role="checkbox"
+                      aria-checked={isChecked}
+                      tabIndex={0}
+                      aria-label={assoc.name || assoc.email}
                       onClick={() => handleAttendeeToggleSched(assoc.id)}
-                      className={`flex items-center gap-2 p-2 rounded-lg border text-sm font-semibold cursor-pointer select-none transition-all ${
+                      onKeyDown={(e) => {
+                        if (e.key === " " || e.key === "Enter") {
+                          e.preventDefault();
+                          handleAttendeeToggleSched(assoc.id);
+                        }
+                      }}
+                      className={`flex items-center gap-2 p-2 rounded-lg border text-sm font-semibold cursor-pointer select-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                         isChecked
                           ? "bg-primary/10 border-primary/40 text-primary"
                           : "bg-card border-border hover:bg-muted/50"
@@ -800,6 +852,8 @@ export function MatterHearings({
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => {}}
+                        tabIndex={-1}
+                        aria-hidden="true"
                         className="pointer-events-none rounded text-primary"
                       />
                       <span className="truncate leading-tight">

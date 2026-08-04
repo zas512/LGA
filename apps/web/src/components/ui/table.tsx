@@ -59,6 +59,7 @@ export function CustomTable<T>({
   emptyTitle = "No records found",
   emptyDescription = "Adjust filters or add a new record to begin.",
   emptyIcon,
+  caption,
   onRowClick,
   pageSize = 8,
   onColumnOrderChange
@@ -197,7 +198,15 @@ export function CustomTable<T>({
       : "table-auto";
 
     return (
-      <table className={`border-collapse ${tableLayoutClass}`}>
+      <table
+        className={`border-collapse ${tableLayoutClass}`}
+        aria-label={caption ?? undefined}
+      >
+        {caption && (
+          <caption className="sr-only text-left text-sm font-bold text-foreground">
+            {caption}
+          </caption>
+        )}
         <colgroup>
           {orderedColumns.map((col) => (
             <col key={col.key} style={{ width: col.width }} />
@@ -213,6 +222,7 @@ export function CustomTable<T>({
               return (
                 <th
                   key={col.key}
+                  scope="col"
                   draggable
                   onDragStart={handleDragStart(col.key)}
                   onDragOver={handleDragOver(col.key)}
@@ -271,8 +281,25 @@ export function CustomTable<T>({
             <tr
               key={rowKey(row)}
               onClick={() => onRowClick?.(row)}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onRowClick(row);
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={onRowClick ? 0 : undefined}
+              role={onRowClick ? "button" : undefined}
+              aria-label={
+                onRowClick ? `View row ${rowKey(row)}` : undefined
+              }
               className={`border-b border-border hover:bg-muted/30 transition-colors ${
-                onRowClick ? "cursor-pointer" : ""
+                onRowClick
+                  ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  : ""
               }`}
             >
               {orderedColumns.map((col) => (
@@ -306,21 +333,23 @@ export function CustomTable<T>({
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              aria-label="Previous page"
               onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
               disabled={pageIndex === 0}
-              className="h-7 w-7 p-0 rounded-xl"
+              className="h-8 w-8 rounded-xl"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              aria-label="Next page"
               onClick={() =>
                 setPageIndex((p) => Math.min(pageCount - 1, p + 1))
               }
               disabled={pageIndex >= pageCount - 1}
-              className="h-7 w-7 p-0 rounded-xl"
+              className="h-8 w-8 rounded-xl"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

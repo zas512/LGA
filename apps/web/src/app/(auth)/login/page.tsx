@@ -44,11 +44,7 @@ export default function LoginPage() {
       await authLogin(data);
     },
     onError: (err: Error) => {
-      console.error(
-        "%c[Client Auth] Login error:",
-        "color: #ef4444; font-weight: bold;",
-        err.message
-      );
+      console.error("[Client Auth] Login error:", err.message);
     }
   });
 
@@ -58,6 +54,7 @@ export default function LoginPage() {
 
   return (
     <Card className="border-border bg-card text-card-foreground shadow-xs py-4">
+      <h1 className="sr-only">Sign in to Laal Global Advisory</h1>
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
           Firm Account Sign In

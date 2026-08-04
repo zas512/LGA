@@ -105,6 +105,7 @@ export function Header({
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search cases, associates, expenses..."
+            aria-label="Search cases, associates, expenses"
             className="pl-9 bg-card border-border text-xs rounded-xl shadow-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/40"
           />
         </div>
@@ -114,8 +115,8 @@ export function Header({
           <div className="flex items-center">
             {isCheckedIn ? (
               <div className="flex items-center gap-2 bg-card border border-border rounded-xl p-1 shadow-xs">
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-bold text-xs rounded-lg">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-warning/10 border border-warning/20 text-warning font-mono font-bold text-xs rounded-lg">
+                  <span className="h-1.5 w-1.5 rounded-full bg-warning inline-block" />
                   <span>In: {formatTimeFriendly(activeCheckInTime)}</span>
                 </div>
                 <button
@@ -129,7 +130,7 @@ export function Header({
             ) : (
               <button
                 onClick={() => checkIn()}
-                className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition-all duration-200 cursor-pointer"
+                className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-success text-success-foreground hover:bg-success/90 font-bold text-xs shadow-xs transition-all duration-200 cursor-pointer"
               >
                 <Play className="h-3 w-3 fill-current" />
                 <span>Check In</span>
@@ -142,7 +143,12 @@ export function Header({
         <ThemeToggle />
 
         {/* Notifications Icon */}
-        <button className="h-9 w-9 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted shadow-xs transition-colors relative cursor-pointer">
+        <button
+          type="button"
+          aria-label="Notifications"
+          title="Notifications"
+          className="h-9 w-9 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted shadow-xs transition-colors relative cursor-pointer"
+        >
           <Bell className="h-4 w-4" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive" />
         </button>
