@@ -1,9 +1,8 @@
 "use client";
-
-import { useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useState } from "react";
 
 export function LogoutButton() {
   const [isLoading, setIsLoading] = useState(false);

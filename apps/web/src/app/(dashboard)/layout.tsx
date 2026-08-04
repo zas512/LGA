@@ -1,7 +1,7 @@
+import { Header } from "@/components/layout/Header";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
 import type { ReactNode } from "react";
 
 export default async function DashboardLayout({

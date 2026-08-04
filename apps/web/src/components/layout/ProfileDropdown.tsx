@@ -1,0 +1,165 @@
+"use client";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { cn } from "@/lib/utils";
+import { HelpCircle, LogOut, Settings } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
+import { useState } from "react";
+
+interface ProfileDropdownProps {
+  user: {
+    email: string;
+    role: string;
+    firmId: string | null;
+    name?: string | null;
+  };
+  collapsed: boolean;
+  userInitials: string;
+  displayName: string;
+}
+
+export function ProfileDropdown({
+  user,
+  collapsed,
+  userInitials,
+  displayName
+}: Readonly<ProfileDropdownProps>) {
+  const { logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleLogout() {
+    setIsLoading(true);
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setMenuOpen(true)}
+      onMouseLeave={() => setMenuOpen(false)}
+    >
+      {/* Dropdown Menu Card */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 360, damping: 28 }}
+            style={{ transformOrigin: "bottom" }}
+            className={cn(
+              "absolute bottom-full left-0 mb-3 rounded-2xl border border-border bg-card shadow-lg p-3 text-card-foreground flex flex-col gap-3 z-50 transition-all duration-300",
+              collapsed ? "w-56 -left-2" : "w-full"
+            )}
+          >
+            {/* Header Profile Details */}
+            <div className="flex flex-col border-b border-border pb-2.5">
+              <p className="text-sm font-bold text-foreground truncate">
+                {displayName}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {user.email}
+              </p>
+              <span className="inline-block text-[10px] font-bold text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/50 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 w-max">
+                {user.role === "OWNER" ? "Principle Counsel" : user.role}
+              </span>
+            </div>
+
+            {/* Staggered Actions List */}
+            <motion.div
+              variants={{
+                hidden: {},
+                show: {
+                  transition: { staggerChildren: 0.035, delayChildren: 0.05 }
+                }
+              }}
+              initial="hidden"
+              animate="show"
+              className="flex flex-col gap-0.5"
+            >
+              {/* Settings Item */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: -6, filter: "blur(3px)" },
+                  show: { opacity: 1, y: 0, filter: "blur(0px)" }
+                }}
+              >
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
+                >
+                  <Settings className="h-4 w-4 shrink-0" />
+                  <span>Settings</span>
+                </Link>
+              </motion.div>
+
+              {/* Help Item */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: -6, filter: "blur(3px)" },
+                  show: { opacity: 1, y: 0, filter: "blur(0px)" }
+                }}
+              >
+                <Link
+                  href="/help"
+                  className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
+                >
+                  <HelpCircle className="h-4 w-4 shrink-0" />
+                  <span>Help & Support</span>
+                </Link>
+              </motion.div>
+
+              {/* Logout Item */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: -6, filter: "blur(3px)" },
+                  show: { opacity: 1, y: 0, filter: "blur(0px)" }
+                }}
+              >
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoading}
+                  className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors mt-1.5 pt-2.5 border-t border-border text-left cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  <span>{isLoading ? "Signing Out..." : "Sign Out"}</span>
+                </button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* User Profile Card (Trigger) */}
+      <div
+        className={cn(
+          "flex items-center bg-card shadow-xs overflow-hidden transition-all duration-300 cursor-pointer select-none",
+          collapsed
+            ? "rounded-full justify-center mx-auto h-10 w-10 border border-border"
+            : "px-3 rounded-full gap-3 h-max py-2 w-full border border-border"
+        )}
+        title={collapsed ? displayName : undefined}
+      >
+        <p className="h-8 w-8 rounded-full bg-primary/10 dark:bg-primary/50 text-primary dark:text-primary-foreground font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
+          {userInitials}
+        </p>
+        {!collapsed && (
+          <div className="flex-1 min-w-0 transition-opacity duration-300">
+            <p className="text-sm font-bold text-card-foreground truncate">
+              {displayName}
+            </p>
+            <p className="text-xs text-primary/80 dark:text-white/80 whitespace-nowrap">
+              {user.role === "OWNER" ? "Principle Counsel" : user.role}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
