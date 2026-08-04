@@ -76,7 +76,7 @@ interface Hearing {
 
 interface MatterHearingsProps {
   id: string;
-  userRole: string;
+  userRole: string | undefined;
 }
 
 export function MatterHearings({

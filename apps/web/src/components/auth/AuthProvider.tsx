@@ -102,7 +102,7 @@ export function AuthProvider({
       }
     }
 
-    initAuth();
+    void initAuth();
 
     return () => {
       isMounted = false;

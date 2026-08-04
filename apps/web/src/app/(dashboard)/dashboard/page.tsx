@@ -1,28 +1,23 @@
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
-import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { DashboardAnalytics } from "@/components/dashboard/DashboardAnalytics";
 import { SuperAdminDashboard } from "@/components/dashboard/SuperAdminDashboard";
+import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getSession } from "@/lib/session";
 import {
-  Users,
   DollarSign,
-  UserCheck,
-  UserX,
-  Palmtree,
   Laptop,
+  Palmtree,
   Receipt,
+  UserCheck,
+  Users,
+  UserX,
   Wallet
 } from "lucide-react";
 
 export default async function DashboardPage() {
   const { user } = await getSession();
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  if (user.role === "SUPER_ADMIN") {
+  if (user?.role === "SUPER_ADMIN") {
     return <SuperAdminDashboard />;
   }
 
@@ -30,7 +25,6 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       {/* Top Header Navigation */}
       <HeaderUpdater title="Firm Operational Dashboard" breadcrumb="Overview" />
-
       {/* 2 Executive Metric Summary Cards */}
       <div className="grid gap-4 grid-cols-2">
         {/* Metric 1: Total Associates */}

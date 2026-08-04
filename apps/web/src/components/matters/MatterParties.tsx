@@ -88,7 +88,7 @@ interface MatterPartiesProps {
     id: string;
     parties: MatterPartyLink[];
   };
-  userRole: string;
+  userRole: string | undefined;
 }
 
 export function MatterParties({

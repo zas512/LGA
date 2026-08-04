@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, DM_Sans, Inter } from "next/font/google";
-import "./globals.css";
 import { cn } from "@/lib/utils";
+import type { Metadata } from "next";
+import { DM_Sans, Geist, Geist_Mono, Inter } from "next/font/google";
+import type { ReactNode } from "react";
+import "./globals.css";
 import Providers from "./providers";
 
 const interHeading = Inter({ subsets: ["latin"], variable: "--font-heading" });
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <html

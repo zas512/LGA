@@ -1,20 +1,13 @@
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { MatterDetail } from "@/components/matters/MatterDetail";
-
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
+import { getSession } from "@/lib/session";
 
 export default async function MatterDetailPage({
   params
-}: Readonly<PageProps>) {
+}: Readonly<{
+  params: Promise<{ id: string }>;
+}>) {
   const { user } = await getSession();
-  if (!user) {
-    redirect("/login");
-  }
-
   const { id } = await params;
 
   return (
@@ -23,7 +16,7 @@ export default async function MatterDetailPage({
         title="Matter Details Workspace"
         breadcrumb="Case Details"
       />
-      <MatterDetail id={id} userRole={user.role} userId={user.sub} />
+      <MatterDetail id={id} userRole={user?.role} userId={user?.sub} />
     </div>
   );
 }

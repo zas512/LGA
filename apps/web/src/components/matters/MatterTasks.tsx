@@ -114,7 +114,7 @@ interface Task {
 
 interface MatterTasksProps {
   id: string;
-  userRole: string;
+  userRole: string | undefined;
 }
 
 export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
@@ -320,7 +320,7 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
       toast.success("Comment added.");
       setSelectedTask(result);
       setNewComment("");
-      queryClient.invalidateQueries({ queryKey: ["matter-tasks", id] });
+      await queryClient.invalidateQueries({ queryKey: ["matter-tasks", id] });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Failed to add comment";
       toast.error(errMsg);
@@ -353,7 +353,7 @@ export function MatterTasks({ id, userRole }: Readonly<MatterTasksProps>) {
       setSelectedTask(result);
       setAttachmentUrl("");
       setAttachmentLabel("");
-      queryClient.invalidateQueries({ queryKey: ["matter-tasks", id] });
+      await queryClient.invalidateQueries({ queryKey: ["matter-tasks", id] });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Failed to link attachment";
       toast.error(errMsg);

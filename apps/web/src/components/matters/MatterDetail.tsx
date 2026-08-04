@@ -1,80 +1,45 @@
 "use client";
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { MatterDetailProps } from "@/types/matterTypes";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
-import {
+  AlertCircle,
+  ArrowLeft,
   Briefcase,
-  Gavel,
   CheckCircle2,
+  Clock,
+  Download,
   FolderClosed,
+  Gavel,
+  GitBranch,
   Loader2,
   Scale,
-  GitBranch,
-  UserCheck,
-  Download,
-  AlertCircle,
-  Clock,
-  ArrowLeft
+  UserCheck
 } from "lucide-react";
 import Link from "next/link";
-
-// Subcomponents
-import { MatterOverview } from "./MatterOverview";
-import { MatterTimeline } from "./MatterTimeline";
-import { MatterHearings } from "./MatterHearings";
-import { MatterTasks } from "./MatterTasks";
+import { useState } from "react";
+import { AssignAssociateDialog } from "./AssignAssociateDialog";
+import { ChangeStageDialog } from "./ChangeStageDialog";
+import { ChangeStatusDialog } from "./ChangeStatusDialog";
 import { MatterDocuments } from "./MatterDocuments";
+import { MatterHearings } from "./MatterHearings";
+import { MatterOverview } from "./MatterOverview";
 import { MatterParties } from "./MatterParties";
-import { Label } from "../ui/label";
-
-interface MatterDetailProps {
-  id: string;
-  userRole: string;
-  userId: string;
-}
-
-interface CourtStage {
-  id: string;
-  name: string;
-  caseType: string;
-  sequenceOrder: number;
-}
-
-interface Associate {
-  id: string;
-  name?: string | null;
-  email: string;
-}
-
+import { MatterTasks } from "./MatterTasks";
+import { MatterTimeline } from "./MatterTimeline";
 export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<
     "overview" | "timeline" | "hearings" | "tasks" | "documents" | "parties"
   >("overview");
 
-  // Admin dialogs state
   const [isStageOpen, setIsStageOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [selectedStageId, setSelectedStageId] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
-  const [selectedAssociateId, setSelectedAssociateId] = useState("");
-  const [associateRole, setAssociateRole] = useState("Associate");
 
   const isAdmin = userRole === "OWNER" || userRole === "ADMIN";
 
-  // 1. Fetch Matter details
   const {
     data: matter,
     isLoading,
@@ -91,138 +56,6 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
     }
   });
 
-  // 2. Fetch available Court Stages for transitions
-  const { data: stages = [] } = useQuery<CourtStage[]>({
-    queryKey: ["court-stages"],
-    queryFn: async () => {
-      const res = await fetch("/api/matters/stages");
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: isAdmin
-  });
-
-  // Filter stages matching current matter's caseType
-  const filteredStages = useMemo(() => {
-    if (!matter) return [];
-    return stages
-      .filter((s) => s.caseType === matter.caseType)
-      .sort((a, b) => a.sequenceOrder - b.sequenceOrder);
-  }, [stages, matter]);
-
-  // 3. Fetch Associates for assigning to legal team
-  const { data: associates = [] } = useQuery<Associate[]>({
-    queryKey: ["associates"],
-    queryFn: async () => {
-      const res = await fetch("/api/associates");
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: isAdmin
-  });
-
-  // Filter out associates already assigned
-  const unassignedAssociates = useMemo(() => {
-    if (!matter || !associates) return [];
-    const assignedIds = new Set(
-      matter.associates.map((a: { associateId: string }) => a.associateId)
-    );
-    return associates.filter((a) => !assignedIds.has(a.id));
-  }, [associates, matter]);
-
-  // Mutations
-  const changeStageMutation = useMutation({
-    mutationFn: async (currentStageId: string) => {
-      const res = await fetch(`/api/matters/${id}/stage`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentStageId })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to change stage");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast.success("Procedural court stage updated successfully.");
-      setIsStageOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["matter", id] });
-      queryClient.invalidateQueries({ queryKey: ["matter-timeline", id] });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    }
-  });
-
-  const changeStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
-      const res = await fetch(`/api/matters/${id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to change status");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast.success("Matter status updated.");
-      setIsStatusOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["matter", id] });
-      queryClient.invalidateQueries({ queryKey: ["matters"] });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    }
-  });
-
-  const assignAssociateMutation = useMutation({
-    mutationFn: async (payload: { associateId: string; role: string }) => {
-      const res = await fetch(`/api/matters/${id}/associates`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to assign associate");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast.success("Counsel added to the matter legal team.");
-      setIsAssignOpen(false);
-      setSelectedAssociateId("");
-      setAssociateRole("Associate");
-      queryClient.invalidateQueries({ queryKey: ["matter", id] });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    }
-  });
-
-  const handleStageTransition = () => {
-    if (!selectedStageId) return;
-    changeStageMutation.mutate(selectedStageId);
-  };
-
-  const handleStatusTransition = () => {
-    if (!selectedStatus) return;
-    changeStatusMutation.mutate(selectedStatus);
-  };
-
-  const handleAssignAssociate = () => {
-    if (!selectedAssociateId) return;
-    assignAssociateMutation.mutate({
-      associateId: selectedAssociateId,
-      role: associateRole
-    });
-  };
-
-  // Helper styles
   const getStatusBadge = (status: string) => {
     let variant: "emerald" | "destructive" | "amber" | "outline" = "outline";
     if (status === "ACTIVE") variant = "emerald";
@@ -278,7 +111,6 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
 
   return (
     <div className="space-y-6">
-      {/* Back to List breadcrumb */}
       <div className="flex items-center justify-between">
         <Link href="/matters">
           <Button
@@ -291,16 +123,12 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
           </Button>
         </Link>
 
-        {/* Action Panel for OWNER/ADMIN */}
         {isAdmin && (
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setSelectedStageId(matter.currentStageId || "");
-                setIsStageOpen(true);
-              }}
+              onClick={() => setIsStageOpen(true)}
               className="rounded-xl text-sm font-bold gap-1 border-border h-8"
             >
               <GitBranch className="h-3.5 w-3.5" />
@@ -310,10 +138,7 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setSelectedStatus(matter.status);
-                setIsStatusOpen(true);
-              }}
+              onClick={() => setIsStatusOpen(true)}
               className="rounded-xl text-sm font-bold gap-1 border-border h-8"
             >
               <Clock className="h-3.5 w-3.5" />
@@ -330,7 +155,6 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
               <span>Assign Counsel</span>
             </Button>
 
-            {/* Dynamic PDF Report download */}
             <a
               href={`/api/matters/${id}/summary-report`}
               target="_blank"
@@ -344,7 +168,6 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
         )}
       </div>
 
-      {/* Main Matter Header Card */}
       <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
         <CardContent className="p-6">
@@ -390,7 +213,6 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
               </p>
             </div>
 
-            {/* Current Stage Display */}
             {matter.currentStage && (
               <div className="bg-muted/30 border border-border/80 p-3 rounded-2xl md:text-right shrink-0">
                 <p className="text-xs font-bold text-muted-foreground uppercase">
@@ -408,7 +230,6 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
         </CardContent>
       </Card>
 
-      {/* Tabs Selector Bar */}
       <div className="flex items-center border-b border-border overflow-x-auto gap-1 pb-1">
         <Button
           variant="ghost"
@@ -489,7 +310,6 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
         </Button>
       </div>
 
-      {/* Render Active Tab */}
       <div className="pt-2">
         {activeTab === "overview" && <MatterOverview matter={matter} />}
         {activeTab === "timeline" && <MatterTimeline id={id} />}
@@ -505,216 +325,29 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
         )}
       </div>
 
-      {/* dialogs for admin features */}
       {isAdmin && (
         <>
-          {/* Change Stage Dialog */}
-          <Dialog open={isStageOpen} onOpenChange={setIsStageOpen}>
-            <DialogContent className="max-w-md bg-card border-border rounded-2xl shadow-xl">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-black text-foreground">
-                  Transition Procedural Stage
-                </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">
-                  Update the case stage according to the civil/criminal lawsuit
-                  sequence. This writes to the audit log.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 py-2">
-                <div className="space-y-1">
-                  <Label
-                    htmlFor="stageSelect"
-                    className="text-xs font-bold text-foreground"
-                  >
-                    Choose Legal Stage
-                  </Label>
-                  <select
-                    id="stageSelect"
-                    value={selectedStageId}
-                    onChange={(e) => setSelectedStageId(e.target.value)}
-                    className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-                  >
-                    <option value="">Select Stage</option>
-                    {filteredStages.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        Stage {s.sequenceOrder}: {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setIsStageOpen(false)}
-                  className="rounded-xl text-sm font-bold"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleStageTransition}
-                  disabled={changeStageMutation.isPending || !selectedStageId}
-                  className="skeuo-button-primary rounded-xl text-sm font-bold gap-1"
-                >
-                  {changeStageMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <span>Update Stage</span>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Change Status Dialog */}
-          <Dialog open={isStatusOpen} onOpenChange={setIsStatusOpen}>
-            <DialogContent className="max-w-md bg-card border-border rounded-2xl shadow-xl">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-black text-foreground">
-                  Change Case Lifecycle Status
-                </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">
-                  Archived matters are soft-deleted and hidden from standard
-                  rosters. Decided/Closed status reserves the record.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 py-2">
-                <div className="space-y-1">
-                  <Label
-                    htmlFor="statusSelect"
-                    className="text-xs font-bold text-foreground"
-                  >
-                    Lifecycle Status
-                  </Label>
-                  <select
-                    id="statusSelect"
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-                  >
-                    <option value="ACTIVE">Active (In Trial)</option>
-                    <option value="DECIDED">Decided (Decreed)</option>
-                    <option value="CLOSED">Closed (Settled)</option>
-                    <option value="ARCHIVED">Archived (Soft Delete)</option>
-                  </select>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setIsStatusOpen(false)}
-                  className="rounded-xl text-sm font-bold"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleStatusTransition}
-                  disabled={changeStatusMutation.isPending || !selectedStatus}
-                  className="skeuo-button-primary rounded-xl text-sm font-bold"
-                >
-                  {changeStatusMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <span>Update Status</span>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Assign Associate Dialog */}
-          <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
-            <DialogContent className="max-w-md bg-card border-border rounded-2xl shadow-xl">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-black text-foreground">
-                  Assign Counsel / Associate
-                </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">
-                  Add an associate to the legal defense team and define their
-                  case role.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 py-2">
-                {/* Associate selection */}
-                <div className="space-y-1">
-                  <Label
-                    htmlFor="assocSelect"
-                    className="text-xs font-bold text-foreground"
-                  >
-                    Legal Staff
-                  </Label>
-                  <select
-                    id="assocSelect"
-                    value={selectedAssociateId}
-                    onChange={(e) => setSelectedAssociateId(e.target.value)}
-                    className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-                  >
-                    <option value="">Select associate</option>
-                    {unassignedAssociates.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name || a.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Role label */}
-                <div className="space-y-1">
-                  <Label
-                    htmlFor="roleInput"
-                    className="text-xs font-bold text-foreground"
-                  >
-                    Case Role Label
-                  </Label>
-                  <select
-                    id="roleInput"
-                    value={associateRole}
-                    onChange={(e) => setAssociateRole(e.target.value)}
-                    className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-                  >
-                    <option value="Lead Counsel">Lead Counsel</option>
-                    <option value="Associate">Associate Counsel</option>
-                    <option value="Co-Counsel">Co-Counsel</option>
-                    <option value="Legal Assistant">Legal Assistant</option>
-                  </select>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsAssignOpen(false);
-                    setSelectedAssociateId("");
-                  }}
-                  className="rounded-xl text-sm font-bold"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAssignAssociate}
-                  disabled={
-                    assignAssociateMutation.isPending || !selectedAssociateId
-                  }
-                  className="skeuo-button-primary rounded-xl text-sm font-bold gap-1"
-                >
-                  {assignAssociateMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <span>Assign Roster</span>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <ChangeStageDialog
+            matterId={id}
+            caseType={matter.caseType}
+            currentStageId={matter.currentStageId}
+            open={isStageOpen}
+            onOpenChange={setIsStageOpen}
+          />
+          <ChangeStatusDialog
+            matterId={id}
+            currentStatus={matter.status}
+            open={isStatusOpen}
+            onOpenChange={setIsStatusOpen}
+          />
+          <AssignAssociateDialog
+            matterId={id}
+            assignedAssociateIds={matter.associates.map(
+              (a: { associateId: string }) => a.associateId
+            )}
+            open={isAssignOpen}
+            onOpenChange={setIsAssignOpen}
+          />
         </>
       )}
     </div>

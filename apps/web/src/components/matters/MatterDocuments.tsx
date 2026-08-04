@@ -86,7 +86,7 @@ interface CaseDocument {
 
 interface MatterDocumentsProps {
   id: string;
-  userRole: string;
+  userRole: string | undefined;
 }
 
 export function MatterDocuments({
