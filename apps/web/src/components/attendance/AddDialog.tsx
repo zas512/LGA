@@ -64,7 +64,7 @@ const AddDialog = ({ open, onOpenChange, onSuccess }: AddDialogProps) => {
         `${addDate}T${addCheckOut}:00`
       ).toISOString();
 
-      const res = await fetch("/api/attendance/manual", {
+      const res = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

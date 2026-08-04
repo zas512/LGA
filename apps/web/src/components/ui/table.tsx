@@ -197,7 +197,7 @@ export function CustomTable<T>({
       : "table-auto";
 
     return (
-      <table className={`w-full border-collapse ${tableLayoutClass}`}>
+      <table className={`border-collapse ${tableLayoutClass}`}>
         <colgroup>
           {orderedColumns.map((col) => (
             <col key={col.key} style={{ width: col.width }} />
