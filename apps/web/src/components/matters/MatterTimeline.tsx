@@ -224,8 +224,11 @@ export function MatterTimeline({ id }: Readonly<MatterTimelineProps>) {
       case "STAGE_CHANGE": {
         const oldStageId = data.beforeState?.currentStageId;
         const newStageId = data.afterState?.currentStageId;
-        const oldName = stageMap.get(oldStageId) || "Initial Filing";
-        const newName = stageMap.get(newStageId) || "Decided";
+        const oldName =
+          (oldStageId ? stageMap.get(oldStageId) : undefined) ||
+          "Initial Filing";
+        const newName =
+          (newStageId ? stageMap.get(newStageId) : undefined) || "Decided";
         return (
           <div className="space-y-1">
             <p className="text-sm font-bold text-foreground">

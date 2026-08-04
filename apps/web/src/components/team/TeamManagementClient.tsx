@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CustomTable, type ColumnConfig } from "@/components/ui/table";
+import { CustomTable } from "@/components/ui/table";
+import type { ColumnConfig } from "@/types/tableTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Shield, UserPlus, Users } from "lucide-react";

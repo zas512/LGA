@@ -1,7 +1,8 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CustomTable, type ColumnConfig } from "@/components/ui/table";
+import { CustomTable } from "@/components/ui/table";
+import type { ColumnConfig } from "@/types/tableTypes";
 import { Calendar, ExternalLink, Scale } from "lucide-react";
 import Link from "next/link";
 
