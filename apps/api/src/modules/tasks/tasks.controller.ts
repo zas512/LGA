@@ -11,8 +11,9 @@ import {
   Query
 } from "@nestjs/common";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { Roles } from "../auth/decorators/roles.decorator";
 import type { JwtPayload } from "../auth/strategies/access-token.strategy";
-import { TaskStatus } from "../../generated/prisma/client.js";
+import { TaskStatus, UserRole } from "../../generated/prisma/client.js";
 import { CreateTaskDto } from "./dto/create-task.dto";
 import { UpdateTaskDto } from "./dto/update-task.dto";
 import {
@@ -25,6 +26,7 @@ import { UsersService } from "../users/users.service";
 import { CloudinaryService } from "../cloudinary/cloudinary.service";
 
 @Controller("tasks")
+@Roles(UserRole.OWNER, UserRole.ASSOCIATE)
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,

@@ -1,11 +1,11 @@
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
-import { MattersList } from "@/components/matters/MattersList";
+import { LeaveRequests } from "@/components/leave/LeaveRequests";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 
 const ALLOWED_ROLES = ["OWNER", "ASSOCIATE"];
 
-export default async function MattersPage() {
+export default async function LeavePage() {
   const { user } = await getSession();
   if (!user) {
     redirect("/login");
@@ -15,11 +15,8 @@ export default async function MattersPage() {
   }
   return (
     <div className="space-y-6">
-      <HeaderUpdater
-        title="Matters & Cases Dashboard"
-        breadcrumb="Matters Ledger"
-      />
-      <MattersList userRole={user.role} />
+      <HeaderUpdater title="Leave Requests" breadcrumb="Leave" />
+      <LeaveRequests userRole={user.role} />
     </div>
   );
 }

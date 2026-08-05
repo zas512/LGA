@@ -88,8 +88,7 @@ export function MatterHearings({
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
-  const canEdit =
-    userRole === "OWNER" || userRole === "ADMIN" || userRole === "ASSOCIATE";
+  const canEdit = userRole === "OWNER" || userRole === "ASSOCIATE";
 
   // 1. Fetch Hearings list
   const {

@@ -441,12 +441,80 @@ async function main() {
     });
   }
 
+  // 9. Seed Leave Types and Balances
+  const leaveTypeDefinitions = [
+    { name: "Annual Leave", annualAllotment: 14, carriesForward: false },
+    { name: "Casual Leave", annualAllotment: 10, carriesForward: false },
+    { name: "Sick Leave", annualAllotment: 8, carriesForward: false }
+  ];
+
+  const seededLeaveTypes: Record<string, string> = {};
+  for (const def of leaveTypeDefinitions) {
+    const existingType = await prisma.leaveType.findFirst({
+      where: { firmId: firm.id, name: def.name }
+    });
+    const type =
+      existingType ??
+      (await prisma.leaveType.create({
+        data: { firmId: firm.id, ...def }
+      }));
+    seededLeaveTypes[def.name] = type.id;
+  }
+
+  const leaveYear = new Date().getFullYear();
+  const balanceSeeds = [
+    { associate: hammadAssoc, used: 3 },
+    { associate: adminAssoc, used: 1 },
+    { associate: associateAssoc, used: 0 }
+  ];
+
+  for (const { associate, used } of balanceSeeds) {
+    for (const [typeName, leaveTypeId] of Object.entries(seededLeaveTypes)) {
+      const def = leaveTypeDefinitions.find((d) => d.name === typeName)!;
+      const existingBalance = await prisma.leaveBalance.findFirst({
+        where: {
+          associateId: associate.id,
+          leaveTypeId,
+          year: leaveYear
+        }
+      });
+      if (!existingBalance) {
+        await prisma.leaveBalance.create({
+          data: {
+            associateId: associate.id,
+            leaveTypeId,
+            year: leaveYear,
+            allotted: def.annualAllotment,
+            used
+          }
+        });
+      }
+    }
+  }
+
+  // One sample pending leave request from the associate
+  const existingLeaveRequest = await prisma.leaveRequest.findFirst({
+    where: { associateId: associateAssoc.id }
+  });
+  if (!existingLeaveRequest) {
+    await prisma.leaveRequest.create({
+      data: {
+        associateId: associateAssoc.id,
+        leaveTypeId: seededLeaveTypes["Annual Leave"],
+        startDate: new Date("2026-08-20T00:00:00.000Z"),
+        endDate: new Date("2026-08-21T00:00:00.000Z"),
+        reason: "Family event",
+        status: "PENDING"
+      }
+    });
+  }
+
   console.log("Seed complete:");
   console.log(`  Firm: ${firm.name} (${firm.id})`);
-  console.log("  superadmin@lga.dev / password123");
-  console.log("  owner@laalglobal.com / password123");
-  console.log("  admin@laalglobal.com / password123");
-  console.log("  associate@laalglobal.com / password123");
+  console.log("  zain@lga.dev / 12345678 (SUPER_ADMIN)");
+  console.log("  hammad@laalglobal.com / 12345678 (OWNER)");
+  console.log("  admin@laalglobal.com / 12345678 (ADMIN)");
+  console.log("  associate@laalglobal.com / 12345678 (ASSOCIATE)");
   console.log("  Cases Seeded: LGA-2026-CV-01, LGA-2026-CR-02");
 }
 

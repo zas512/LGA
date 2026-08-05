@@ -4,7 +4,7 @@ A record of what was broken, missing, or unimplemented in `apps/api`, and what
 replaced it. Scope was the NestJS API only; `apps/web` was not modified.
 
 **Verification at time of writing:** `tsc --noEmit` clean · `nest build` clean ·
-19/19 tests pass · lint down from 23 errors to 6 (all pre-existing, see
+27/27 tests pass · lint down from 23 errors to 6 (all pre-existing, see
 [Still open](#still-open)).
 
 ---
@@ -59,7 +59,7 @@ allows any authenticated user when no roles are declared. An ASSOCIATE could
 list every colleague's account and email — while the web sidebar already
 restricted that page to OWNER/ADMIN.
 
-Now: `@Roles(OWNER, ADMIN)` at class level, matching the frontend's intent.
+Now: `@Roles(OWNER)` at class level, matching the frontend's intent.
 
 ### 2.4 JWTs and password hashes written to stdout
 ```ts
@@ -186,7 +186,7 @@ Now: `onModuleInit` calls `$connect()`, and `main.ts` calls
 | Guard binding | per-controller, opt-in | global `APP_GUARD` chain + `@Public()` |
 | Serialization | raw Prisma objects | entities + `plainToInstance` |
 | Env validation | none | `validateEnv` at boot |
-| Tests | none | 19 |
+| Tests | none | 27 |
 
 ### 4.1 Exception filter
 A single `@Catch()` filter rather than a chain, because ordering for globally
@@ -255,9 +255,11 @@ empty placeholder entities (`export class Auth {}`) became real entities.
 
 ## 6. Test suite
 
-`src/app.security.spec.ts` — 19 tests over the wiring that is invisible to unit
+`src/app.security.spec.ts` — 27 tests over the wiring that is invisible to unit
 tests: which routes the global guard protects, that `@Public()` opts out, that
-`RolesGuard` is enforced, that DTO validation runs, and that the two
+`RolesGuard` is enforced (including the RBAC matrix — ADMIN kept out of
+everything but expenses, ASSOCIATE kept out of firm-wide and manual attendance,
+ADMIN kept out of leave approval), that DTO validation runs, and that the two
 privilege-escalation paths are closed. Prisma is mocked, so no database needed.
 
 Two config fixes were required to make tests runnable at all:
@@ -295,12 +297,12 @@ imports AuthModule. Swap the two names in the `.map()` to reverse it.
 
 Deliberately not addressed — listed so nothing is lost.
 
-- **`/leave`, `/fixed-expenses`, `/manual-expenses` are unimplemented.** Still
-  Nest CLI scaffolds returning `'This action adds a new leave'`. They are now
-  behind auth + `@Roles(OWNER, ADMIN)` and marked `TODO`, but no real logic
-  exists and nothing consumes them. Decide: implement or delete.
-- **6 lint errors** — unused scaffold parameters in those same three services.
-  Pre-existing; they disappear when the modules are implemented or removed.
+- **`/leave` was a Nest CLI scaffold** (`'This action adds a new leave'`) when
+  this audit was written. It has since been fully implemented: associates apply
+  for and track their own leave, the owner sees every firm request and is the
+  only role that can approve/reject, per-year balances are decremented on
+  approval, and the web app gained a `/leave` page. `/fixed-expenses` and
+  `/manual-expenses` were implemented as part of the expenses module.
 - **`void crypto;`** at the end of `users.service.ts` — kept at your request. The
   import it referred to is gone, so it now resolves to the Node global and does
   nothing.

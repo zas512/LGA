@@ -12,8 +12,9 @@ Primary user: the **firm owner / managing partner** — the person who oversees 
 
 Other audiences, confirmed by the role model in code:
 
-- **ADMIN** — operations/HR administrator: manages associates, attendance records, leaves, expenses.
-- **ASSOCIATE** — lawyers and staff: self-serve attendance check-in/out, leave requests, their assigned case tasks.
+- **OWNER** — the person who owns/runs the firm (see primary user above): full, unlimited access to the firm — matters, tasks, associates & staff, attendance, leaves, expenses.
+- **ADMIN** — expenses & billing **only**. Stripped from everything else: no matters, tasks, associates, attendance, or leaves.
+- **ASSOCIATE** — lawyers and staff: self-serve attendance check-in/out, leave applications, their own assigned tasks, and access **only** to the matters/cases they are a part of.
 - **SUPER_ADMIN** — platform operator: manages tenant firms (create firm, set owner credentials), outside any single firm.
 
 ## Product Purpose

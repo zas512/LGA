@@ -1,4 +1,6 @@
 import dynamic from "next/dynamic";
+import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
+import { AssociateDashboard } from "@/components/dashboard/AssociateDashboard";
 import { SuperAdminDashboard } from "@/components/dashboard/SuperAdminDashboard";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -173,6 +175,16 @@ export default async function DashboardPage() {
 
   if (user?.role === "SUPER_ADMIN") {
     return <SuperAdminDashboard />;
+  }
+
+  // ADMIN: expenses are the only surface they manage.
+  if (user?.role === "ADMIN") {
+    return <AdminDashboard />;
+  }
+
+  // ASSOCIATE: personal tasks + attendance, no firm-wide stats.
+  if (user?.role === "ASSOCIATE") {
+    return <AssociateDashboard />;
   }
 
   const stats = await loadFirmStats();

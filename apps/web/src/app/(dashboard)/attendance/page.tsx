@@ -22,6 +22,7 @@ import {
   UserCheck
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -50,10 +51,19 @@ const EditDialog = dynamic(() => import("@/components/attendance/EditDialog"), {
 
 export default function AttendancePage() {
   const { user, refreshUser } = useAuth();
+  const router = useRouter();
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const isCheckedIn = user?.isCheckedIn ?? false;
   const activeCheckInTime = user?.activeCheckInTime;
+
+  // Attendance is self-service for OWNER and ASSOCIATE only; ADMIN/SUPER_ADMIN
+  // are steered back to the dashboard.
+  useEffect(() => {
+    if (user && user.role !== "OWNER" && user.role !== "ASSOCIATE") {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   // Modal control states
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -79,9 +89,7 @@ export default function AttendancePage() {
         return;
       }
       const endpoint =
-        user.role === "OWNER" || user.role === "ADMIN"
-          ? "/api/attendance/firm"
-          : "/api/attendance";
+        user.role === "OWNER" ? "/api/attendance/firm" : "/api/attendance";
       const res = await fetch(endpoint);
       if (!res.ok) {
         throw new Error("Failed to load attendance records");
@@ -202,9 +210,9 @@ export default function AttendancePage() {
       const recMonth = recDate.getMonth() + 1; // 1-12
       const recYear = recDate.getFullYear();
 
-      // 1. Associate filter (Owner/Admin view)
+      // 1. Associate filter (Owner view)
       if (
-        (user?.role === "OWNER" || user?.role === "ADMIN") &&
+        user?.role === "OWNER" &&
         selectedAssociateId !== "all" &&
         rec.associateId !== selectedAssociateId
       ) {
@@ -391,20 +399,20 @@ export default function AttendancePage() {
   };
 
   const columns: ColumnConfig<AttendanceRecord>[] = useMemo(() => {
-    const isOwnerOrAdmin = user?.role === "OWNER" || user?.role === "ADMIN";
+    const isOwner = user?.role === "OWNER";
 
     const baseCols: ColumnConfig<AttendanceRecord>[] = [
       {
         key: "date",
         header: "Date",
-        width: isOwnerOrAdmin ? "14%" : "18%",
+        width: isOwner ? "14%" : "18%",
         sortable: true,
         accessor: (r) => r.date,
         render: (r) => formatDateFriendly(r.date)
       }
     ];
 
-    if (isOwnerOrAdmin) {
+    if (isOwner) {
       baseCols.push({
         key: "associate",
         header: "Associate",
@@ -469,7 +477,7 @@ export default function AttendancePage() {
       {
         key: "source",
         header: "Source",
-        width: isOwnerOrAdmin ? "12%" : "14%",
+        width: isOwner ? "12%" : "14%",
         sortable: true,
         accessor: (r) => r.source,
         render: (r) => getSourceBadge(r.source)
@@ -487,38 +495,42 @@ export default function AttendancePage() {
           </span>
         )
       },
-      {
-        key: "actions",
-        header: "Actions",
-        width: "8%",
-        align: "right",
-        render: (r) => (
-          <div className="flex items-center justify-end gap-1.5">
-            <button
-              onClick={() => handleOpenEdit(r)}
-              className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
-              title="Edit Record"
-            >
-              <Edit2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => {
-                if (
-                  confirm(
-                    "Are you sure you want to delete this attendance record?"
-                  )
-                ) {
-                  deleteRecord(r.id);
-                }
-              }}
-              className="p-1.5 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors cursor-pointer"
-              title="Delete Record"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )
-      }
+      ...(isOwner
+        ? [
+            {
+              key: "actions",
+              header: "Actions",
+              width: "8%",
+              align: "right" as const,
+              render: (r: AttendanceRecord) => (
+                <div className="flex items-center justify-end gap-1.5">
+                  <button
+                    onClick={() => handleOpenEdit(r)}
+                    className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
+                    title="Edit Record"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (
+                        confirm(
+                          "Are you sure you want to delete this attendance record?"
+                        )
+                      ) {
+                        deleteRecord(r.id);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors cursor-pointer"
+                    title="Delete Record"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )
+            }
+          ]
+        : [])
     ];
   }, [user, deleteRecord]);
 
@@ -660,24 +672,38 @@ export default function AttendancePage() {
           </Card>
 
           {/* Card 4: Action Card */}
-          <Card className="border border-primary/20 bg-primary/5 shadow-xs flex flex-col justify-between items-start p-5 rounded-2xl">
-            <div className="space-y-1">
-              <h2 className="font-extrabold text-sm text-foreground">
-                Missed checking in?
-              </h2>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Log attendance manually for past shifts or offsite assignments.
-              </p>
-            </div>
-            <Button
-              onClick={() => setIsAddOpen(true)}
-              size="sm"
-              className="mt-3 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Record Manually
-            </Button>
-          </Card>
+          {user?.role === "OWNER" ? (
+            <Card className="border border-primary/20 bg-primary/5 shadow-xs flex flex-col justify-between items-start p-5 rounded-2xl">
+              <div className="space-y-1">
+                <h2 className="font-extrabold text-sm text-foreground">
+                  Missed checking in?
+                </h2>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Log attendance manually for past shifts or offsite assignments.
+                </p>
+              </div>
+              <Button
+                onClick={() => setIsAddOpen(true)}
+                size="sm"
+                className="mt-3 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Record Manually
+              </Button>
+            </Card>
+          ) : (
+            <Card className="border border-primary/20 bg-primary/5 shadow-xs flex flex-col justify-between items-start p-5 rounded-2xl">
+              <div className="space-y-1">
+                <h2 className="font-extrabold text-sm text-foreground">
+                  Track your shifts
+                </h2>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Use the Check In / Check Out buttons in the top bar to clock
+                  your in-office or remote shifts.
+                </p>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -697,8 +723,8 @@ export default function AttendancePage() {
 
         {/* Filter controls bar */}
         <div className="px-6 py-4 border-b border-border bg-muted/20 flex flex-wrap gap-4 items-end">
-          {/* Associate Selector (Owner/Admin only) */}
-          {(user?.role === "OWNER" || user?.role === "ADMIN") && (
+          {/* Associate Selector (Owner only) */}
+          {user?.role === "OWNER" && (
             <div className="space-y-1.5 min-w-40">
               <Label
                 htmlFor="filter-associate"

@@ -12,6 +12,7 @@ import { CaseDocumentEntity, CaseDocumentVersionEntity } from "./entities/case-d
 import { UserRole, Prisma } from "../../generated/prisma/client";
 import { MattersService } from "../matters/matters.service";
 import { JwtPayload } from "../auth/strategies/access-token.strategy";
+import { UsersService } from "../users/users.service";
 
 const DOCUMENT_SELECT = {
   id: true,
@@ -37,8 +38,23 @@ const DOCUMENT_SELECT = {
 export class CaseDocumentsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mattersService: MattersService
+    private readonly mattersService: MattersService,
+    private readonly users: UsersService
   ) {}
+
+  /**
+   * Documents are scoped to the caller's own matters. `MattersService.findOne`
+   * expects the *Associate* id for ASSOCIATE callers, not the User id — the
+   * previous code passed `user.sub` here, so associates could never open
+   * documents of matters they were assigned to.
+   */
+  private async resolveAssociateId(
+    user: JwtPayload
+  ): Promise<string | undefined> {
+    return user.role === UserRole.ASSOCIATE
+      ? this.users.resolveAssociateId(user.sub)
+      : undefined;
+  }
 
   async create(
     matterId: string,
@@ -51,7 +67,7 @@ export class CaseDocumentsService {
       matterId,
       firmId,
       user.role,
-      user.role === UserRole.ASSOCIATE ? user.sub : undefined
+      await this.resolveAssociateId(user)
     );
 
     const doc = await this.prisma.$transaction(async (tx) => {
@@ -104,7 +120,7 @@ export class CaseDocumentsService {
       doc.matterId,
       firmId,
       user.role,
-      user.role === UserRole.ASSOCIATE ? user.sub : undefined
+      await this.resolveAssociateId(user)
     );
 
     const newVersion = await this.prisma.$transaction(async (tx) => {
@@ -190,7 +206,7 @@ export class CaseDocumentsService {
       doc.matterId,
       firmId,
       user.role,
-      user.role === UserRole.ASSOCIATE ? user.sub : undefined
+      await this.resolveAssociateId(user)
     );
 
     return toEntity(CaseDocumentEntity, doc);
@@ -215,7 +231,7 @@ export class CaseDocumentsService {
       doc.matterId,
       firmId,
       user.role,
-      user.role === UserRole.ASSOCIATE ? user.sub : undefined
+      await this.resolveAssociateId(user)
     );
 
     const versions = await this.prisma.caseDocumentVersion.findMany({
@@ -236,7 +252,7 @@ export class CaseDocumentsService {
       matterId,
       firmId,
       user.role,
-      user.role === UserRole.ASSOCIATE ? user.sub : undefined
+      await this.resolveAssociateId(user)
     );
 
     const docs = await this.prisma.caseDocument.findMany({

@@ -11,7 +11,7 @@ import { UsersService } from "./users.service";
  * only the `@Roles()` requirement is declared here.
  */
 @Controller("users")
-@Roles(UserRole.OWNER, UserRole.ADMIN)
+@Roles(UserRole.OWNER)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

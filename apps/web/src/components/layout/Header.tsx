@@ -129,8 +129,8 @@ export function Header({
           />
         </div>
 
-        {/* Dynamic Attendance Buttons (For users belonging to firms) */}
-        {user && user.role !== "SUPER_ADMIN" && (
+        {/* Dynamic Attendance Buttons (self check-in/out for firm owner & associates) */}
+        {user && (user.role === "OWNER" || user.role === "ASSOCIATE") && (
           <div className="flex items-center">
             {isCheckedIn ? (
               <div className="flex items-center gap-2 bg-card border border-border rounded-xl p-1 shadow-xs">

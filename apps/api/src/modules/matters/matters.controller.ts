@@ -28,6 +28,7 @@ import { MatterEntity } from "./entities/matter.entity";
 import { UsersService } from "../users/users.service";
 
 @Controller("matters")
+@Roles(UserRole.OWNER, UserRole.ASSOCIATE)
 export class MattersController {
   constructor(
     private readonly mattersService: MattersService,
@@ -35,7 +36,7 @@ export class MattersController {
   ) {}
 
   @Post()
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async create(
     @CurrentUser("firmId") firmId: string | null,
     @Body() dto: CreateMatterDto
@@ -90,7 +91,7 @@ export class MattersController {
   }
 
   @Patch(":id")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser("firmId") firmId: string | null,
@@ -103,7 +104,7 @@ export class MattersController {
   }
 
   @Patch(":id/stage")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async changeStage(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
@@ -116,7 +117,7 @@ export class MattersController {
   }
 
   @Patch(":id/status")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async changeStatus(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
@@ -129,7 +130,7 @@ export class MattersController {
   }
 
   @Post(":id/associates")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async assignAssociate(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser("firmId") firmId: string | null,
@@ -142,7 +143,7 @@ export class MattersController {
   }
 
   @Delete(":id/associates/:associateId")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async removeAssociate(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser("firmId") firmId: string | null,
@@ -155,7 +156,7 @@ export class MattersController {
   }
 
   @Post(":id/parties")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async addParty(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser("firmId") firmId: string | null,
@@ -188,7 +189,7 @@ export class MattersController {
   }
 
   @Get(":id/summary-report")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async getSummaryReport(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser("firmId") firmId: string | null,

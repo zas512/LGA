@@ -62,9 +62,9 @@ export class AttendanceService {
   }
 
   async findAllForFirm(user: JwtPayload): Promise<AttendanceEntity[]> {
-    if (user.role !== "OWNER" && user.role !== "ADMIN") {
+    if (user.role !== "OWNER") {
       throw new BadRequestException(
-        "Only owners and admins can view firm-wide attendance."
+        "Only the owner can view firm-wide attendance."
       );
     }
     if (!user.firmId) {

@@ -12,6 +12,9 @@ const PROTECTED_PREFIXES = [
   "/associates",
   "/expenses",
   "/attendance",
+  "/tasks",
+  "/matters",
+  "/leave",
   "/platform"
 ];
 
@@ -19,7 +22,10 @@ const FIRM_SCOPED_PREFIXES = [
   "/dashboard",
   "/associates",
   "/expenses",
-  "/attendance"
+  "/attendance",
+  "/tasks",
+  "/matters",
+  "/leave"
 ];
 
 function matchesAnyPrefix(pathname: string, prefixes: string[]) {
@@ -114,6 +120,9 @@ export const config = {
     "/associates/:path*",
     "/expenses/:path*",
     "/attendance/:path*",
+    "/tasks/:path*",
+    "/matters/:path*",
+    "/leave/:path*",
     "/platform/:path*",
     "/login"
   ]

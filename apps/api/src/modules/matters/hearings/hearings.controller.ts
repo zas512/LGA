@@ -19,6 +19,7 @@ import { HearingsService } from "./hearings.service";
 import { HearingEntity } from "./entities/hearing.entity";
 
 @Controller()
+@Roles(UserRole.OWNER, UserRole.ASSOCIATE)
 export class HearingsController {
   constructor(private readonly hearingsService: HearingsService) {}
 
@@ -58,7 +59,7 @@ export class HearingsController {
   }
 
   @Post("hearings/:id/attendees")
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.OWNER)
   async logAttendees(
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser("firmId") firmId: string | null,

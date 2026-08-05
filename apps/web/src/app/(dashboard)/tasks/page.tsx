@@ -3,7 +3,7 @@ import { TasksBoard } from "@/components/tasks/TasksBoard";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 
-const ALLOWED_ROLES = ["OWNER", "ADMIN", "ASSOCIATE"];
+const ALLOWED_ROLES = ["OWNER", "ASSOCIATE"];
 
 export default async function TasksPage() {
   const { user } = await getSession();

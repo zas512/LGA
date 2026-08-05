@@ -101,8 +101,7 @@ export function MatterDocuments({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isVersionOpen, setIsVersionOpen] = useState(false);
 
-  const canEdit =
-    userRole === "OWNER" || userRole === "ADMIN" || userRole === "ASSOCIATE";
+  const canEdit = userRole === "OWNER" || userRole === "ASSOCIATE";
 
   // 1. Fetch Documents list
   const {

@@ -86,7 +86,7 @@ export function AssociatesClient({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<FirmMember | null>(null);
 
-  const canManage = userRole === "OWNER" || userRole === "ADMIN";
+  const canManage = userRole === "OWNER";
 
   // Fetch all firm members (Users having the same firmId)
   const {

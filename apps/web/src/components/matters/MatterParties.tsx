@@ -98,7 +98,7 @@ export function MatterParties({
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
 
-  const canEdit = userRole === "OWNER" || userRole === "ADMIN";
+  const canEdit = userRole === "OWNER";
 
   // Fetch unique firm contacts for dropdown selection
   const { data: contacts = [], isLoading: isLoadingContacts } = useQuery<

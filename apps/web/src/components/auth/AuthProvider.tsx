@@ -32,6 +32,8 @@ const PROTECTED_PATHS = [
   "/expenses",
   "/attendance",
   "/tasks",
+  "/leave",
+  "/matters",
   "/platform"
 ];
 

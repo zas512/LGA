@@ -8,7 +8,7 @@ export default async function AssociatesPage() {
   if (!user) {
     redirect("/login");
   }
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
+  if (user.role !== "OWNER") {
     redirect("/dashboard");
   }
   return (

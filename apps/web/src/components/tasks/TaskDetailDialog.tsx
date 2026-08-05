@@ -83,7 +83,7 @@ export function TaskDetailDialog({
     setLocalTask(task);
   }, [task]);
 
-  const isAdmin = userRole === "OWNER" || userRole === "ADMIN";
+  const isAdmin = userRole === "OWNER";
 
   // Resolve the caller's associate id from any nested associate object so we
   // can gate assignee-only actions without a separate lookup.

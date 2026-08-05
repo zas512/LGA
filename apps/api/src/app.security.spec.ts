@@ -121,6 +121,52 @@ describe("API security wiring", () => {
         .expect(403);
     });
 
+    it("keeps an ADMIN out of everything but expenses", async () => {
+      await request(app.getHttpServer())
+        .get("/api/associates")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ADMIN)}`)
+        .expect(403);
+      await request(app.getHttpServer())
+        .get("/api/users")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ADMIN)}`)
+        .expect(403);
+      await request(app.getHttpServer())
+        .get("/api/tasks")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ADMIN)}`)
+        .expect(403);
+      await request(app.getHttpServer())
+        .get("/api/matters")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ADMIN)}`)
+        .expect(403);
+      const expensesRes = await request(app.getHttpServer())
+        .get("/api/expenses")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ADMIN)}`);
+      expect(expensesRes.status).not.toBe(403);
+    });
+
+    it("keeps an associate out of firm-wide attendance", async () => {
+      await request(app.getHttpServer())
+        .get("/api/attendance/firm")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ASSOCIATE)}`)
+        .expect(403);
+    });
+
+    it("keeps an associate out of manual attendance entry", async () => {
+      await request(app.getHttpServer())
+        .post("/api/attendance/manual")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ASSOCIATE)}`)
+        .send({ date: "2026-08-05" })
+        .expect(403);
+    });
+
+    it("keeps an ADMIN out of approving leave", async () => {
+      await request(app.getHttpServer())
+        .patch("/api/leave/00000000-0000-0000-0000-000000000001/status")
+        .set("Authorization", `Bearer ${tokenFor(UserRole.ADMIN)}`)
+        .send({ status: "APPROVED" })
+        .expect(403);
+    });
+
     it("keeps an associate out of creating a matter", async () => {
       await request(app.getHttpServer())
         .post("/api/matters")
@@ -166,7 +212,7 @@ describe("API security wiring", () => {
     it("rejects a manual attendance body with a bad date, which used to skip validation entirely", async () => {
       const res = await request(app.getHttpServer())
         .post("/api/attendance/manual")
-        .set("Authorization", `Bearer ${tokenFor(UserRole.ASSOCIATE)}`)
+        .set("Authorization", `Bearer ${tokenFor(UserRole.OWNER)}`)
         .send({
           date: "07-2026-01",
           checkIn: "nonsense",

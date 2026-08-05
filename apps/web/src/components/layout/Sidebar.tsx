@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import {
   Building2,
   Calendar,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -55,25 +56,31 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       title: "Matters & Cases",
       href: "/matters",
       icon: Scale,
-      roles: ["OWNER", "ADMIN", "ASSOCIATE"]
+      roles: ["OWNER", "ASSOCIATE"]
     },
     {
       title: "Tasks",
       href: "/tasks",
       icon: ListChecks,
-      roles: ["OWNER", "ADMIN", "ASSOCIATE"]
+      roles: ["OWNER", "ASSOCIATE"]
     },
     {
       title: "Associates & Staff",
       href: "/associates",
       icon: Users,
-      roles: ["OWNER", "ADMIN"]
+      roles: ["OWNER"]
     },
     {
-      title: "Attendance & Leaves",
+      title: "Attendance",
       href: "/attendance",
       icon: Calendar,
-      roles: ["OWNER", "ADMIN", "ASSOCIATE"]
+      roles: ["OWNER", "ASSOCIATE"]
+    },
+    {
+      title: "Leave Requests",
+      href: "/leave",
+      icon: CalendarDays,
+      roles: ["OWNER", "ASSOCIATE"]
     },
     {
       title: "Expenses & Billing",

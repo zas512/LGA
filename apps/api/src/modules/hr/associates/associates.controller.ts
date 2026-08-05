@@ -24,7 +24,7 @@ import { AssociatesService } from "./associates.service";
  * any authenticated associate could read the firm's full roster and emails.
  */
 @Controller("associates")
-@Roles(UserRole.OWNER, UserRole.ADMIN)
+@Roles(UserRole.OWNER)
 export class AssociatesController {
   constructor(private readonly associatesService: AssociatesService) {}
 

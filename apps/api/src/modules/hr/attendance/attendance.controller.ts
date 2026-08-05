@@ -9,17 +9,20 @@ import {
   Post
 } from "@nestjs/common";
 import { CurrentUser } from "../../auth/decorators/current-user.decorator";
+import { Roles } from "../../auth/decorators/roles.decorator";
 import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import { UserRole } from "../../../generated/prisma/client";
 import { AttendanceService } from "./attendance.service";
 import { CheckInDto, CreateAttendanceDto } from "./dto/create-attendance.dto";
 import { UpdateAttendanceDto } from "./dto/update-attendance.dto";
 import { AttendanceEntity } from "./entities/attendance.entity";
 
 /**
- * Every route is scoped to the caller's own associate record, so no `@Roles()`
- * requirement is needed beyond the global authentication guard.
+ * Own-record routes (list, check-in, check-out) are open to OWNER and
+ * ASSOCIATE; firm-wide views and record corrections are OWNER-only.
  */
 @Controller("attendance")
+@Roles(UserRole.OWNER, UserRole.ASSOCIATE)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
@@ -29,6 +32,7 @@ export class AttendanceController {
   }
 
   @Get("firm")
+  @Roles(UserRole.OWNER)
   findAllFirm(@CurrentUser() user: JwtPayload): Promise<AttendanceEntity[]> {
     return this.attendanceService.findAllForFirm(user);
   }
@@ -50,6 +54,7 @@ export class AttendanceController {
   }
 
   @Post("manual")
+  @Roles(UserRole.OWNER)
   createManual(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateAttendanceDto
@@ -58,6 +63,7 @@ export class AttendanceController {
   }
 
   @Patch(":id")
+  @Roles(UserRole.OWNER)
   update(
     @CurrentUser() user: JwtPayload,
     @Param("id", ParseUUIDPipe) id: string,
@@ -67,6 +73,7 @@ export class AttendanceController {
   }
 
   @Delete(":id")
+  @Roles(UserRole.OWNER)
   remove(
     @CurrentUser() user: JwtPayload,
     @Param("id", ParseUUIDPipe) id: string

@@ -38,7 +38,7 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  const isAdmin = userRole === "OWNER" || userRole === "ADMIN";
+  const isAdmin = userRole === "OWNER";
 
   const {
     data: matter,

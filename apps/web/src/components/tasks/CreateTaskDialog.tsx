@@ -84,7 +84,7 @@ export function CreateTaskDialog({
   currentUserEmail
 }: Readonly<CreateTaskDialogProps>) {
   const queryClient = useQueryClient();
-  const isAdmin = userRole === "OWNER" || userRole === "ADMIN";
+  const isAdmin = userRole === "OWNER";
 
   // Independent vs matter-linked. When opened from a matter page the task is
   // locked to that matter.

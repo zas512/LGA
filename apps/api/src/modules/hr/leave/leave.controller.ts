@@ -1,40 +1,65 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { LeaveService } from './leave.service';
-import { CreateLeaveDto } from './dto/create-leave.dto';
-import { UpdateLeaveDto } from './dto/update-leave.dto';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { UserRole } from '../../../generated/prisma/client';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post
+} from "@nestjs/common";
+import { CurrentUser } from "../../auth/decorators/current-user.decorator";
+import { Roles } from "../../auth/decorators/roles.decorator";
+import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import { UserRole } from "../../../generated/prisma/client";
+import { CreateLeaveDto } from "./dto/create-leave.dto";
+import { UpdateLeaveStatusDto } from "./dto/update-leave.dto";
+import {
+  LeaveBalanceEntity,
+  LeaveRequestEntity,
+  LeaveTypeEntity
+} from "./entities/leave.entity";
+import { LeaveService } from "./leave.service";
 
-// TODO: unimplemented Nest CLI scaffold — the handlers still return placeholder
-// strings. It had no guards at all, so every route was reachable without a
-// token; the global AccessTokenGuard plus this @Roles() now close that off.
-@Roles(UserRole.OWNER, UserRole.ADMIN)
-@Controller('leave')
+/**
+ * Associates apply for and track their own leave; the owner sees every firm
+ * request and is the only role that can approve or reject. ADMIN/SUPER_ADMIN
+ * have no access here.
+ */
+@Controller("leave")
+@Roles(UserRole.OWNER, UserRole.ASSOCIATE)
 export class LeaveController {
   constructor(private readonly leaveService: LeaveService) {}
 
   @Post()
-  create(@Body() createLeaveDto: CreateLeaveDto) {
-    return this.leaveService.create(createLeaveDto);
+  create(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateLeaveDto
+  ): Promise<LeaveRequestEntity> {
+    return this.leaveService.create(user, dto);
   }
 
   @Get()
-  findAll() {
-    return this.leaveService.findAll();
+  findAll(@CurrentUser() user: JwtPayload): Promise<LeaveRequestEntity[]> {
+    return this.leaveService.findAll(user);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.leaveService.findOne(+id);
+  @Get("types")
+  findTypes(@CurrentUser() user: JwtPayload): Promise<LeaveTypeEntity[]> {
+    return this.leaveService.findTypes(user);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLeaveDto: UpdateLeaveDto) {
-    return this.leaveService.update(+id, updateLeaveDto);
+  @Get("balances")
+  findBalances(@CurrentUser() user: JwtPayload): Promise<LeaveBalanceEntity[]> {
+    return this.leaveService.findBalances(user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.leaveService.remove(+id);
+  @Patch(":id/status")
+  @Roles(UserRole.OWNER)
+  updateStatus(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateLeaveStatusDto
+  ): Promise<LeaveRequestEntity> {
+    return this.leaveService.updateStatus(user, id, dto);
   }
 }
