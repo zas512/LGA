@@ -85,7 +85,7 @@ export async function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent className="pb-4">
-          <div className="text-3xl font-black text-foreground tracking-tight">
+          <div className="text-4xl font-black text-foreground tracking-tight">
             {formatPKR(expensesTotal)}
           </div>
           <p className="text-xs text-muted-foreground font-semibold mt-1 mb-4">

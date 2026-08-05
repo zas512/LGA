@@ -160,7 +160,7 @@ export function Header({
           )}
           <span className="text-primary font-bold">{breadcrumb}</span>
         </p>
-          <h1 className="text-2xl font-black tracking-tight text-foreground mt-0.5">
+          <h1 className="text-3xl font-black tracking-tight text-foreground mt-0.5">
             {title}
           </h1>
         </div>

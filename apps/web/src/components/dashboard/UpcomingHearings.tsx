@@ -48,7 +48,7 @@ function HearingRow({ hearing }: { hearing: UpcomingHearing }) {
           <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             {weekday}
           </span>
-          <span className="text-lg font-black leading-none text-primary">
+          <span className="text-xl font-black leading-none text-primary">
             {day}
           </span>
           <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -64,7 +64,10 @@ function HearingRow({ hearing }: { hearing: UpcomingHearing }) {
           <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-muted-foreground">
             <Scale className="h-3 w-3 shrink-0 text-primary/70" />
             <span className="truncate">
-              {matter?.firmCaseNumber ?? "Matter"} · {matter?.clientName ?? "—"}
+              <span className="font-mono font-semibold">
+                {matter?.firmCaseNumber ?? "Matter"}
+              </span>
+              {matter?.clientName ? ` · ${matter.clientName}` : ""}
             </span>
           </p>
           <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground/80">
@@ -79,7 +82,7 @@ function HearingRow({ hearing }: { hearing: UpcomingHearing }) {
           <span className="text-[11px] font-bold uppercase tracking-wide text-primary">
             {dayLabel(hearing.hearingDate)}
           </span>
-          <span className="text-[11px] font-semibold text-muted-foreground">
+          <span className="text-[11px] font-mono font-semibold text-muted-foreground">
             {fmtTime.format(date)}
           </span>
         </div>

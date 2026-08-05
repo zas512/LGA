@@ -53,10 +53,11 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="border-border bg-card text-card-foreground shadow-xs py-4">
+    <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden py-4">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
       <h1 className="sr-only">Sign in to Laal Global Advisory</h1>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
+        <CardTitle className="text-2xl font-black tracking-tight text-foreground">
           Firm Account Sign In
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground font-medium">
@@ -82,7 +83,7 @@ export default function LoginPage() {
               placeholder="Email"
               {...register("email")}
               disabled={loginMutation.isPending}
-              className="bg-card border-border text-foreground focus-visible:ring-primary/40 rounded-full"
+              className="bg-card border-border text-foreground focus-visible:ring-primary/40 rounded-xl"
             />
             {errors.email && (
               <p className="text-xs text-destructive font-semibold">
@@ -104,7 +105,7 @@ export default function LoginPage() {
               placeholder="Password"
               {...register("password")}
               disabled={loginMutation.isPending}
-              className="bg-card border-border text-foreground focus-visible:ring-primary/40 rounded-full"
+              className="bg-card border-border text-foreground focus-visible:ring-primary/40 rounded-xl"
             />
             {errors.password && (
               <p className="text-xs text-destructive font-semibold">

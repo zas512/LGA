@@ -327,7 +327,7 @@ export default async function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-3xl font-black text-foreground tracking-tight">
+            <div className="text-4xl font-black text-foreground tracking-tight">
               {totalAssociates == null ? "—" : totalAssociates}
             </div>
             <p className="text-xs text-muted-foreground font-semibold mt-1 mb-4">
@@ -371,7 +371,7 @@ export default async function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-3xl font-black text-foreground tracking-tight">
+            <div className="text-4xl font-black text-foreground tracking-tight">
               {expenseValue}
             </div>
             <p className="text-xs text-muted-foreground font-semibold mt-1 mb-4">

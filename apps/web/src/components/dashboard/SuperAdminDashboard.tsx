@@ -127,7 +127,8 @@ export function SuperAdminDashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-12">
-        <Card className="md:col-span-12 border-border bg-card text-card-foreground shadow-xs">
+        <Card className="skeuo-card md:col-span-12 bg-card text-card-foreground relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" />
