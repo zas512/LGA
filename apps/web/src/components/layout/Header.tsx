@@ -4,9 +4,10 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/utils";
 import { RootState } from "@/redux/store";
-import { Bell, Play, Search, Square } from "lucide-react";
+import { openSidebar } from "@/redux/ui";
+import { Bell, Menu, Play, Search, Square } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
 interface HeaderProps {
@@ -32,6 +33,7 @@ export function Header({
   const title = propTitle ?? reduxHeader.title;
   const breadcrumb = propBreadcrumb ?? reduxHeader.breadcrumb;
   const pathname = usePathname();
+  const dispatch = useDispatch();
   const { user, refreshUser } = useAuth();
 
   // Derive the breadcrumb parent from the active route instead of a fixed label.
@@ -100,10 +102,19 @@ export function Header({
   };
 
   return (
-    <header className="flex items-center justify-between gap-4 pb-6 pt-2">
-      {/* Left: Breadcrumb & Title */}
-      <div>
-        <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
+    <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pb-6 pt-2">
+      {/* Left: Mobile nav toggle + Breadcrumb & Title */}
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          type="button"
+          onClick={() => dispatch(openSidebar())}
+          aria-label="Open navigation menu"
+          className="lg:hidden h-9 w-9 shrink-0 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted shadow-xs transition-colors cursor-pointer"
+        >
+          <Menu className="h-4 w-4" />
+        </button>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
           {!breadcrumbIsPath && parentLabel && (
             <>
               <span>{parentLabel}</span>
@@ -112,15 +123,16 @@ export function Header({
           )}
           <span className="text-primary font-bold">{breadcrumb}</span>
         </p>
-        <h1 className="text-2xl font-black tracking-tight text-foreground mt-0.5">
-          {title}
-        </h1>
+          <h1 className="text-2xl font-black tracking-tight text-foreground mt-0.5">
+            {title}
+          </h1>
+        </div>
       </div>
 
       {/* Center & Right: Search Bar & Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         {/* Global Search Bar */}
-        <div className="relative w-48 md:w-64">
+        <div className="relative w-full sm:w-48 md:w-64">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search cases, associates, expenses..."

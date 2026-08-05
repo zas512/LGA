@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import headerReducer from "./header";
+import uiReducer from "./ui";
 
 export const store = configureStore({
   reducer: {
-    header: headerReducer
+    header: headerReducer,
+    ui: uiReducer
   }
 });
 

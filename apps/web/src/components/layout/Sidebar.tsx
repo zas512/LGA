@@ -1,6 +1,8 @@
 "use client";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 import { cn } from "@/lib/utils";
+import { RootState } from "@/redux/store";
+import { closeSidebar } from "@/redux/ui";
 import {
   Building2,
   Calendar,
@@ -11,13 +13,15 @@ import {
   LayoutDashboard,
   ListChecks,
   Scale,
-  Users
+  Users,
+  X
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface SidebarProps {
   user: {
@@ -28,22 +32,61 @@ interface SidebarProps {
   };
 }
 
+/** Sidebar is an in-flow left column on `lg+`; below that it is a hidden
+ *  off-canvas drawer revealed as an overlay (backdrop + fixed panel) so the
+ *  content area always owns the full width on mobile. */
 export function Sidebar({ user }: Readonly<SidebarProps>) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const dispatch = useDispatch();
+  const mobileOpen = useSelector((state: RootState) => state.ui.sidebarOpen);
+
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // Keyboard shortcut Ctrl+B / Cmd+B to toggle sidebar collapse
+  // The collapse (icon-only) behavior is desktop-only. On mobile the drawer
+  // always shows the full sidebar.
+  const collapsed = isDesktop ? desktopCollapsed : false;
+
+  // Track whether we're on a desktop viewport (>= 1024px).
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Keyboard shortcut Ctrl+B / Cmd+B to toggle sidebar collapse (desktop only)
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "b" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
-        setCollapsed((prev) => !prev);
+        setDesktopCollapsed((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
+
+  // Close the mobile drawer on navigation, on Escape, and when we cross up to
+  // a desktop viewport (where the drawer no longer exists).
+  useEffect(() => {
+    dispatch(closeSidebar());
+  }, [pathname, dispatch]);
+
+  useEffect(() => {
+    if (isDesktop) dispatch(closeSidebar());
+  }, [isDesktop, dispatch]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") dispatch(closeSidebar());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen, dispatch]);
 
   const navItems = [
     {
@@ -109,169 +152,206 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
   const userInitials = getInitials(displayName);
 
   return (
-    <aside
-      className={cn(
-        "shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col justify-between min-h-screen text-sidebar-foreground relative overflow-visible transition-[width,padding] duration-200 ease-out",
-        collapsed ? "w-[4.5rem] p-3" : "w-64 p-5"
-      )}
-    >
-      {/* Floating Collapse Toggle Button */}
-      <button
-        type="button"
-        onClick={() => setCollapsed(!collapsed)}
-        aria-label={
-          collapsed ? "Expand sidebar" : "Collapse sidebar"
-        }
-        aria-expanded={!collapsed}
-        className="absolute top-4 -right-3 z-40 h-8 w-8 rounded-full bg-card border border-border shadow-xs flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 transition-all"
-        title={
-          collapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"
-        }
-      >
-        {collapsed ? (
-          <ChevronRight className="h-3 w-3" />
-        ) : (
-          <ChevronLeft className="h-3 w-3" />
+    <>
+      {/* Mobile backdrop (hidden on desktop) */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            key="sidebar-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => dispatch(closeSidebar())}
+            aria-hidden="true"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden"
+          />
         )}
-      </button>
+      </AnimatePresence>
 
-      {/* Top Section */}
-      <div className="space-y-6 flex flex-col">
-        {/* Brand Logo & Title */}
-        <div
-          className={cn(
-            "flex items-center border-b border-sidebar-border h-11.25",
-            collapsed
-              ? "justify-center pb-6 mt-6"
-              : "gap-3 mt-8 justify-between pb-12"
-          )}
+      <aside
+        className={cn(
+          "flex flex-col justify-between bg-sidebar border-r border-sidebar-border text-sidebar-foreground relative overflow-visible",
+          "min-h-screen shrink-0 transition-[transform,width,padding] duration-300 ease-out",
+          // Mobile: fixed overlay drawer, off-canvas until opened
+          "fixed inset-y-0 left-0 z-50 w-64 p-5",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          // Desktop: normal in-flow flex column, with the collapse behavior
+          "lg:static lg:translate-x-0",
+          collapsed ? "lg:w-[4.5rem] lg:p-3" : "lg:w-64 lg:p-5"
+        )}
+      >
+        {/* Floating Collapse Toggle Button (desktop only) */}
+        <button
+          type="button"
+          onClick={() => setDesktopCollapsed(!desktopCollapsed)}
+          aria-label={
+            desktopCollapsed ? "Expand sidebar" : "Collapse sidebar"
+          }
+          aria-expanded={!desktopCollapsed}
+          className="hidden lg:flex absolute top-4 -right-3 z-40 h-8 w-8 rounded-full bg-card border border-border shadow-xs items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 transition-all"
+          title={
+            desktopCollapsed
+              ? "Expand sidebar (Ctrl+B)"
+              : "Collapse sidebar (Ctrl+B)"
+          }
         >
-          {collapsed ? (
-            <Image
-              src="/laal_icon.png"
-              alt="LGA"
-              width={30}
-              height={30}
-              className="object-contain"
-            />
+          {desktopCollapsed ? (
+            <ChevronRight className="h-3 w-3" />
           ) : (
-            <>
-              <Image
-                src="/lgt_black.png"
-                alt="Laal Global Advisory"
-                width={300}
-                height={100}
-                className="object-contain dark:hidden"
-              />
-              <Image
-                src="/lgt_white.png"
-                alt="Laal Global Advisory"
-                width={300}
-                height={100}
-                className="object-contain hidden dark:block"
-              />
-            </>
+            <ChevronLeft className="h-3 w-3" />
           )}
+        </button>
+
+        {/* Top Section */}
+        <div className="space-y-6 flex flex-col">
+          {/* Brand Logo & Title */}
+          <div
+            className={cn(
+              "flex items-center border-b border-sidebar-border h-11.25",
+              collapsed
+                ? "justify-center pb-6 mt-6"
+                : "gap-3 mt-8 justify-between pb-12"
+            )}
+          >
+            {collapsed ? (
+              <Image
+                src="/laal_icon.png"
+                alt="LGA"
+                width={30}
+                height={30}
+                className="object-contain"
+              />
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/lgt_black.png"
+                    alt="Laal Global Advisory"
+                    width={300}
+                    height={100}
+                    className="object-contain dark:hidden"
+                  />
+                  <Image
+                    src="/lgt_white.png"
+                    alt="Laal Global Advisory"
+                    width={300}
+                    height={100}
+                    className="object-contain hidden dark:block"
+                  />
+                </div>
+                {/* Mobile-only close button */}
+                <button
+                  type="button"
+                  onClick={() => dispatch(closeSidebar())}
+                  aria-label="Close navigation menu"
+                  className="lg:hidden h-8 w-8 rounded-lg bg-sidebar-accent/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Navigation Items */}
+          <nav
+            className="space-y-1.5 pt-1"
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
+            {!collapsed && (
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground px-3 pb-1">
+                Navigation
+              </p>
+            )}
+            <AnimatePresence>
+              {filteredNav.map((item, index) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    onMouseEnter={() => setHoveredIndex(index)}
+                    className={cn(
+                      "relative flex items-center rounded-xl text-xs font-semibold outline-none transition-colors",
+                      collapsed
+                        ? "justify-center h-9 w-9 mx-auto"
+                        : "px-3.5 py-2.5 gap-3 w-full",
+                      isActive
+                        ? "text-sidebar-primary-foreground font-bold shadow-md shadow-primary/20"
+                        : "text-muted-foreground hover:text-sidebar-foreground"
+                    )}
+                    title={collapsed ? item.title : undefined}
+                  >
+                    {/* Hover background pill */}
+                    {hoveredIndex === index && !isActive && (
+                      <motion.div
+                        layoutId="sidebar-hover-pill"
+                        className={cn(
+                          "absolute inset-0 bg-sidebar-accent/80",
+                          collapsed ? "rounded-full" : "rounded-xl"
+                        )}
+                        transition={{
+                          type: "spring",
+                          stiffness: 360,
+                          damping: 32,
+                          mass: 0.6
+                        }}
+                      />
+                    )}
+                    {/* Active background pill */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active-pill"
+                        className={cn(
+                          "absolute inset-0 bg-sidebar-primary",
+                          collapsed ? "rounded-full" : "rounded-xl"
+                        )}
+                        transition={{
+                          type: "spring",
+                          stiffness: 360,
+                          damping: 32,
+                          mass: 0.6
+                        }}
+                      />
+                    )}
+
+                    <Icon
+                      className={cn(
+                        "h-4 w-4 relative z-10 shrink-0",
+                        isActive
+                          ? "text-sidebar-primary-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    />
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -4 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -4 }}
+                        className="relative z-10 truncate"
+                      >
+                        {item.title}
+                      </motion.span>
+                    )}
+                  </Link>
+                );
+              })}
+            </AnimatePresence>
+          </nav>
         </div>
 
-        {/* Navigation Items */}
-        <nav
-          className="space-y-1.5 pt-1"
-          onMouseLeave={() => setHoveredIndex(null)}
-        >
-          {!collapsed && (
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground px-3 pb-1">
-              Navigation
-            </p>
-          )}
-          <AnimatePresence>
-            {filteredNav.map((item, index) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isActive ? "page" : undefined}
-                  onMouseEnter={() => setHoveredIndex(index)}
-                  className={cn(
-                    "relative flex items-center rounded-xl text-xs font-semibold outline-none transition-colors",
-                    collapsed
-                      ? "justify-center h-9 w-9 mx-auto"
-                      : "px-3.5 py-2.5 gap-3 w-full",
-                    isActive
-                      ? "text-sidebar-primary-foreground font-bold shadow-md shadow-primary/20"
-                      : "text-muted-foreground hover:text-sidebar-foreground"
-                  )}
-                  title={collapsed ? item.title : undefined}
-                >
-                  {/* Hover background pill */}
-                  {hoveredIndex === index && !isActive && (
-                    <motion.div
-                      layoutId="sidebar-hover-pill"
-                      className={cn(
-                        "absolute inset-0 bg-sidebar-accent/80",
-                        collapsed ? "rounded-full" : "rounded-xl"
-                      )}
-                      transition={{
-                        type: "spring",
-                        stiffness: 360,
-                        damping: 32,
-                        mass: 0.6
-                      }}
-                    />
-                  )}
-                  {/* Active background pill */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-active-pill"
-                      className={cn(
-                        "absolute inset-0 bg-sidebar-primary",
-                        collapsed ? "rounded-full" : "rounded-xl"
-                      )}
-                      transition={{
-                        type: "spring",
-                        stiffness: 360,
-                        damping: 32,
-                        mass: 0.6
-                      }}
-                    />
-                  )}
-
-                  <Icon
-                    className={cn(
-                      "h-4 w-4 relative z-10 shrink-0",
-                      isActive
-                        ? "text-sidebar-primary-foreground"
-                        : "text-muted-foreground"
-                    )}
-                  />
-                  {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -4 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -4 }}
-                      className="relative z-10 truncate"
-                    >
-                      {item.title}
-                    </motion.span>
-                  )}
-                </Link>
-              );
-            })}
-          </AnimatePresence>
-        </nav>
-      </div>
-
-      {/* Bottom Section */}
-      <div className="pt-4 border-t border-sidebar-border relative">
-        <ProfileDropdown
-          user={user}
-          collapsed={collapsed}
-          userInitials={userInitials}
-          displayName={displayName}
-        />
-      </div>
-    </aside>
+        {/* Bottom Section */}
+        <div className="pt-4 border-t border-sidebar-border relative">
+          <ProfileDropdown
+            user={user}
+            collapsed={collapsed}
+            userInitials={userInitials}
+            displayName={displayName}
+          />
+        </div>
+      </aside>
+    </>
   );
 }
