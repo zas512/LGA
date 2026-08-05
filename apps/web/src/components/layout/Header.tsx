@@ -1,12 +1,13 @@
 "use client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { Input } from "@/components/ui/input";
-import { getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { RootState } from "@/redux/store";
 import { openSidebar } from "@/redux/ui";
-import { Bell, Menu, Play, Search, Square } from "lucide-react";
+import { Bell, Menu, Play, Square } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
@@ -43,7 +44,30 @@ export function Header({
   const isCheckedIn = user?.isCheckedIn ?? false;
   const activeCheckInTime = user?.activeCheckInTime;
 
+  // Check-out is a two-step confirm: the first tap arms it, the second within
+  // 4s commits it. This stops a stray click from silently ending a shift.
+  const [confirmingCheckOut, setConfirmingCheckOut] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    };
+  }, []);
+
+  const armCheckOut = () => {
+    setConfirmingCheckOut(true);
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    confirmTimerRef.current = setTimeout(
+      () => setConfirmingCheckOut(false),
+      4000
+    );
+  };
+
   const checkIn = async () => {
+    if (isSubmitting) return; // prevents double-tap duplicate records
+    setIsSubmitting(true);
     try {
       const localDate = new Date();
       const year = localDate.getFullYear();
@@ -67,10 +91,21 @@ export function Header({
     } catch (err) {
       console.error(err);
       toast.error(getErrorMessage(err, "Check-in failed"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const checkOut = async () => {
+    if (isSubmitting) return;
+    // Two-step confirm: first tap arms, second tap (within 4s) commits.
+    if (!confirmingCheckOut) {
+      armCheckOut();
+      return;
+    }
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    setConfirmingCheckOut(false);
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/attendance/check-out", {
         method: "POST",
@@ -87,6 +122,8 @@ export function Header({
     } catch (err) {
       console.error(err);
       toast.error(getErrorMessage(err, "Check-out failed"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -94,7 +131,7 @@ export function Header({
   const formatTimeFriendly = (isoStr: string | null | undefined) => {
     if (!isoStr) return "";
     const d = new Date(isoStr);
-    return d.toLocaleTimeString("en-US", {
+    return d.toLocaleTimeString("en-PK", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true
@@ -131,15 +168,8 @@ export function Header({
 
       {/* Center & Right: Search Bar & Actions */}
       <div className="flex items-center gap-3 flex-wrap">
-        {/* Global Search Bar */}
-        <div className="relative w-full sm:w-48 md:w-64">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search cases, associates, expenses..."
-            aria-label="Search cases, associates, expenses"
-            className="pl-9 bg-card border-border text-xs rounded-xl shadow-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/40"
-          />
-        </div>
+        {/* Global Search Bar — debounced navigation to /search?q=… */}
+        <GlobalSearch />
 
         {/* Dynamic Attendance Buttons (self check-in/out for firm owner & associates) */}
         {user && (user.role === "OWNER" || user.role === "ASSOCIATE") && (
@@ -152,19 +182,38 @@ export function Header({
                 </div>
                 <button
                   onClick={() => checkOut()}
-                  className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-destructive hover:bg-destructive/95 text-destructive-foreground font-bold text-xs transition-all duration-200 cursor-pointer"
+                  disabled={isSubmitting}
+                  aria-live="polite"
+                  title={
+                    confirmingCheckOut
+                      ? "Tap again to confirm check-out"
+                      : "Check out of today's shift"
+                  }
+                  className={cn(
+                    "flex items-center gap-1.5 h-7 px-3 rounded-lg text-destructive-foreground font-bold text-xs transition-all duration-200 cursor-pointer disabled:pointer-events-none disabled:opacity-50",
+                    confirmingCheckOut
+                      ? "bg-destructive ring-2 ring-destructive/40 hover:bg-destructive/90"
+                      : "bg-destructive/90 hover:bg-destructive"
+                  )}
                 >
                   <Square className="h-3 w-3 fill-current" />
-                  <span>Check Out</span>
+                  <span>
+                    {isSubmitting
+                      ? "Checking out…"
+                      : confirmingCheckOut
+                        ? "Confirm check out"
+                        : "Check Out"}
+                  </span>
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => checkIn()}
-                className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-success text-success-foreground hover:bg-success/90 font-bold text-xs shadow-xs transition-all duration-200 cursor-pointer"
+                disabled={isSubmitting}
+                className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-success text-success-foreground hover:bg-success/90 font-bold text-xs shadow-xs transition-all duration-200 cursor-pointer disabled:pointer-events-none disabled:opacity-50"
               >
                 <Play className="h-3 w-3 fill-current" />
-                <span>Check In</span>
+                <span>{isSubmitting ? "Checking in…" : "Check In"}</span>
               </button>
             )}
           </div>

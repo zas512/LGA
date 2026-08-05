@@ -170,6 +170,9 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       </AnimatePresence>
 
       <aside
+        // On mobile, a closed drawer is still in the DOM (translated off-canvas);
+        // make it inert so its links can't be tabbed into. Desktop is never inert.
+        inert={isDesktop ? undefined : !mobileOpen}
         className={cn(
           "flex flex-col justify-between bg-sidebar border-r border-sidebar-border text-sidebar-foreground relative overflow-visible",
           "min-h-screen shrink-0 transition-[transform,width,padding] duration-300 ease-out",

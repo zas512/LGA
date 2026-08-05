@@ -23,6 +23,12 @@ import {
 } from "recharts";
 
 const FIXED_EXPENSE_TYPES = new Set(["FIXED", "SALARY", "PAYROLL"]);
+
+/** Pakistan's fiscal year runs 1 July – 30 June, so "FY 2025–26" spans that. */
+function pakistaniFiscalYearLabel(now = new Date()): string {
+  const fy = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  return `FY ${fy}–${String(fy + 1).slice(2)}`;
+}
 const CHART_COLORS = [
   "var(--color-chart-1)",
   "var(--color-chart-2)",
@@ -148,9 +154,7 @@ export function DashboardAnalytics({
                 Fixed payroll salaries vs manual operational expenses
               </CardDescription>
             </div>
-            <Badge variant="navy">
-              {new Date().getFullYear()} Fiscal
-            </Badge>
+            <Badge variant="navy">{pakistaniFiscalYearLabel()}</Badge>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="h-64 w-full">

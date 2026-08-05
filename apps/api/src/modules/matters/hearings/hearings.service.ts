@@ -132,6 +132,57 @@ export class HearingsService {
     return toEntities(HearingEntity, hearings);
   }
 
+  /**
+   * Upcoming Tareekh for the whole firm: future SCHEDULED hearings, nearest
+   * first, each carrying a compact matter summary so a landing view can render
+   * the next date without a second query. ASSOCIATE callers only see hearings
+   * on matters they are a part of (same rule as `findAll`).
+   */
+  async findUpcoming(user: JwtPayload): Promise<HearingEntity[]> {
+    const firmId = user.firmId;
+    if (!firmId) {
+      throw new BadRequestException("Must belong to a firm");
+    }
+
+    const associateId = await this.resolveAssociateId(user);
+    const now = new Date();
+    const todayStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
+
+    const matterWhere: Prisma.MatterWhereInput = { firmId };
+    if (user.role === UserRole.ASSOCIATE && associateId) {
+      matterWhere.associates = { some: { associateId } };
+    }
+
+    const hearings = await this.prisma.hearing.findMany({
+      where: {
+        status: HearingStatus.SCHEDULED,
+        hearingDate: { gte: todayStart },
+        matter: matterWhere
+      },
+      include: {
+        attendees: true,
+        matter: {
+          select: {
+            id: true,
+            firmCaseNumber: true,
+            courtCaseNumber: true,
+            clientName: true,
+            court: true,
+            bench: true,
+            caseType: true,
+            currentStage: { select: { name: true } }
+          }
+        }
+      },
+      orderBy: { hearingDate: "asc" },
+      take: 25
+    });
+
+    return toEntities(HearingEntity, hearings);
+  }
+
   async update(
     id: string,
     firmId: string,

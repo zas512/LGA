@@ -46,6 +46,16 @@ export class HearingsController {
     return this.hearingsService.findAll(matterId, user.firmId, user);
   }
 
+  @Get("hearings/upcoming")
+  async findUpcoming(
+    @CurrentUser() user: JwtPayload
+  ): Promise<HearingEntity[]> {
+    if (!user.firmId) {
+      throw new ForbiddenException("Must belong to a firm");
+    }
+    return this.hearingsService.findUpcoming(user);
+  }
+
   @Patch("hearings/:id")
   async update(
     @Param("id", ParseUUIDPipe) id: string,

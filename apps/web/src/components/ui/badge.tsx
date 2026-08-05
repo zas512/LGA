@@ -29,9 +29,18 @@ export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+// Status variants carry meaning that assistive tech should announce; the
+// neutral variants (default/secondary/outline/navy) are decorative labels.
+const STATUS_VARIANTS = new Set(["emerald", "amber", "destructive"]);
+
+function Badge({ className, variant, role, ...props }: BadgeProps) {
+  const isStatus = variant ? STATUS_VARIANTS.has(variant) : false;
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      role={isStatus ? (role ?? "status") : role}
+      className={cn(badgeVariants({ variant }), className)}
+      {...props}
+    />
   );
 }
 

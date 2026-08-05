@@ -9,6 +9,32 @@ export class HearingAttendeeSummaryEntity {
   associateId!: string;
 }
 
+export class MatterSummaryEntity {
+  @Expose()
+  id!: string;
+
+  @Expose()
+  firmCaseNumber!: string;
+
+  @Expose()
+  courtCaseNumber?: string | null;
+
+  @Expose()
+  clientName!: string;
+
+  @Expose()
+  court?: string | null;
+
+  @Expose()
+  bench?: string | null;
+
+  @Expose()
+  caseType?: string | null;
+
+  @Expose()
+  currentStage?: { name: string } | null;
+}
+
 export class HearingEntity {
   @Expose()
   id!: string;
@@ -49,4 +75,8 @@ export class HearingEntity {
   @Expose()
   @Type(() => HearingAttendeeSummaryEntity)
   attendees?: HearingAttendeeSummaryEntity[];
+
+  @Expose()
+  @Type(() => MatterSummaryEntity)
+  matter?: MatterSummaryEntity;
 }

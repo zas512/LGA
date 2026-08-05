@@ -2,12 +2,15 @@ import dynamic from "next/dynamic";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { AssociateDashboard } from "@/components/dashboard/AssociateDashboard";
 import { SuperAdminDashboard } from "@/components/dashboard/SuperAdminDashboard";
+import { PendingApprovals } from "@/components/dashboard/PendingApprovals";
+import { UpcomingHearings } from "@/components/dashboard/UpcomingHearings";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPKR } from "@/lib/format";
 import { backendFetch } from "@/lib/server-api";
 import { getSession } from "@/lib/session";
 import {
+  AlertTriangle,
   Laptop,
   Palmtree,
   Receipt,
@@ -47,6 +50,25 @@ export interface ExpenseRecord {
   type?: string;
 }
 
+export interface UpcomingHearing {
+  id: string;
+  matterId: string;
+  hearingDate: string;
+  purpose: string;
+  status: string;
+  presidingJudge?: string | null;
+  matter?: {
+    id: string;
+    firmCaseNumber: string;
+    courtCaseNumber?: string | null;
+    clientName: string;
+    court?: string | null;
+    bench?: string | null;
+    caseType?: string | null;
+    currentStage?: { name: string } | null;
+  } | null;
+}
+
 interface FirmStats {
   totalAssociates: number | null;
   present: number | null;
@@ -57,6 +79,13 @@ interface FirmStats {
   expensesTotal: number | null;
   fixedTotal: number | null;
   manualTotal: number | null;
+  hearings: UpcomingHearing[];
+  /** Whether each source actually returned usable data — a failed source must
+   *  surface as "unavailable", never as zero. */
+  associatesOk: boolean;
+  attendanceOk: boolean;
+  expensesOk: boolean;
+  hearingsOk: boolean;
 }
 
 function isFixedExpense(e: ExpenseRecord): boolean {
@@ -74,15 +103,22 @@ async function loadFirmStats(): Promise<FirmStats> {
     expenses: [],
     expensesTotal: null,
     fixedTotal: null,
-    manualTotal: null
+    manualTotal: null,
+    hearings: [],
+    associatesOk: false,
+    attendanceOk: false,
+    expensesOk: false,
+    hearingsOk: false
   };
 
   try {
-    const [associatesRes, attendanceRes, expensesRes] = await Promise.all([
-      backendFetch("/associates").catch(() => null),
-      backendFetch("/attendance/firm").catch(() => null),
-      backendFetch("/expenses").catch(() => null)
-    ]);
+    const [associatesRes, attendanceRes, expensesRes, hearingsRes] =
+      await Promise.all([
+        backendFetch("/associates").catch(() => null),
+        backendFetch("/attendance/firm").catch(() => null),
+        backendFetch("/expenses").catch(() => null),
+        backendFetch("/hearings/upcoming").catch(() => null)
+      ]);
 
     const associates = associatesRes?.ok
       ? await associatesRes.json().catch(() => [])
@@ -93,10 +129,18 @@ async function loadFirmStats(): Promise<FirmStats> {
     const expenses: ExpenseRecord[] = expensesRes?.ok
       ? await expensesRes.json().catch(() => [])
       : [];
+    const hearings: UpcomingHearing[] = hearingsRes?.ok
+      ? await hearingsRes.json().catch(() => [])
+      : [];
 
-    const totalAssociates = Array.isArray(associates)
-      ? associates.length
-      : null;
+    // A source counts as OK only if the request succeeded AND the body parsed
+    // to a usable array. Anything else is "unavailable", not zero.
+    const associatesOk = Array.isArray(associates);
+    const attendanceOk = Array.isArray(attendance);
+    const expensesOk = Array.isArray(expenses);
+    const hearingsOk = Array.isArray(hearings);
+
+    const totalAssociates = associatesOk ? associates.length : null;
 
     const now = new Date();
     const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
@@ -107,22 +151,37 @@ async function loadFirmStats(): Promise<FirmStats> {
       r.date?.startsWith(todayKey)
     );
 
-    const distinctByStatus = (status: AttendanceRecord["status"]) =>
-      new Set(
-        todayRecords
-          .filter((r) => r.status === status)
-          .map((r) => r.associateId)
-      ).size;
+    const presentSet = new Set(
+      todayRecords
+        .filter((r) => r.status === "PRESENT")
+        .map((r) => r.associateId)
+    );
+    const leaveSet = new Set(
+      todayRecords
+        .filter((r) => r.status === "LEAVE")
+        .map((r) => r.associateId)
+    );
+    // Remote = distinct associates whose only presence today came from a remote
+    // check-in. Someone with a biometric PRESENT record is present, not remote,
+    // so they must not be counted twice.
+    const remoteSet = new Set(
+      todayRecords
+        .filter(
+          (r) =>
+            r.source === "REMOTE_CHECKIN" && !presentSet.has(r.associateId)
+        )
+        .map((r) => r.associateId)
+    );
 
-    const present = distinctByStatus("PRESENT");
-    const leave = distinctByStatus("LEAVE");
-    const remote = todayRecords.filter(
-      (r) => r.source === "REMOTE_CHECKIN"
-    ).length;
+    const present = presentSet.size;
+    const leave = leaveSet.size;
+    const remote = remoteSet.size;
+    // Absent is only trustworthy when both headcount and today's attendance
+    // actually loaded; otherwise the whole-firm "absent" figure is fabricated.
     const absent =
-      totalAssociates == null
-        ? null
-        : Math.max(0, totalAssociates - present - leave - remote);
+      associatesOk && attendanceOk
+        ? Math.max(0, associates.length - present - leave - remote)
+        : null;
 
     const fixedTotal = expenses
       .filter(isFixedExpense)
@@ -134,14 +193,19 @@ async function loadFirmStats(): Promise<FirmStats> {
 
     return {
       totalAssociates,
-      present: totalAssociates == null ? null : present,
+      present: associatesOk && attendanceOk ? present : null,
       absent,
-      leave: totalAssociates == null ? null : leave,
-      remote: totalAssociates == null ? null : remote,
+      leave: associatesOk && attendanceOk ? leave : null,
+      remote: associatesOk && attendanceOk ? remote : null,
       expenses,
-      expensesTotal: Array.isArray(expenses) ? expensesTotal : null,
-      fixedTotal: Array.isArray(expenses) ? fixedTotal : null,
-      manualTotal: Array.isArray(expenses) ? manualTotal : null
+      expensesTotal: expensesOk ? expensesTotal : null,
+      fixedTotal: expensesOk ? fixedTotal : null,
+      manualTotal: expensesOk ? manualTotal : null,
+      hearings,
+      associatesOk,
+      attendanceOk,
+      expensesOk,
+      hearingsOk
     };
   } catch {
     return empty;
@@ -197,17 +261,58 @@ export default async function DashboardPage() {
     expenses,
     expensesTotal,
     fixedTotal,
-    manualTotal
+    manualTotal,
+    hearings,
+    associatesOk,
+    attendanceOk,
+    expensesOk,
+    hearingsOk
   } = stats;
 
   const expenseValue = expensesTotal == null ? "—" : formatPKR(expensesTotal);
   const fixedValue = fixedTotal == null ? "—" : formatPKR(fixedTotal);
   const manualValue = manualTotal == null ? "—" : formatPKR(manualTotal);
 
+  // Surface failed sources explicitly instead of silently showing partial data
+  // as fact. Retry = refresh (this is a server-rendered view).
+  const failedSources = [
+    !associatesOk && "Headcount",
+    !attendanceOk && "Attendance",
+    !expensesOk && "Expenses",
+    !hearingsOk && "Hearings"
+  ].filter((s): s is string => typeof s === "string");
+
   return (
     <div className="space-y-6">
       {/* Top Header Navigation */}
       <HeaderUpdater title="Firm Operational Dashboard" breadcrumb="Overview" />
+
+      {/* Partial-fetch warning: a failed source is "unavailable", never zero. */}
+      {failedSources.length > 0 && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-warning/25 bg-warning/10 px-4 py-3"
+        >
+          <AlertTriangle className="h-4 w-4 mt-0.5 text-warning shrink-0" />
+          <div className="text-sm">
+            <p className="font-bold text-warning-foreground">
+              Some data couldn&apos;t be loaded
+            </p>
+            <p className="text-xs text-muted-foreground font-medium mt-0.5">
+              {failedSources.join(", ")}{" "}
+              {failedSources.length === 1 ? "is" : "are"} unavailable — showing
+              a partial overview.{" "}
+              <a
+                href="/dashboard"
+                className="font-bold text-warning-foreground underline underline-offset-2 hover:opacity-80"
+              >
+                Retry
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 2 Executive Metric Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Metric 1: Total Associates */}
@@ -300,6 +405,13 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Upcoming Tareekh + Pending approvals — the day's two "what needs me" queues. */}
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <UpcomingHearings hearings={hearings} ok={hearingsOk} />
+        <PendingApprovals />
+      </div>
+
       {/* Analytics & Data Table */}
       <DashboardAnalytics expenses={expenses} />
     </div>

@@ -107,7 +107,7 @@ export function ProfileDropdown({
                 {user.email}
               </p>
               <span className="inline-block text-xs font-bold text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/50 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 w-max">
-                {user.role === "OWNER" ? "Principle Counsel" : user.role}
+                {user.role === "OWNER" ? "Principal Counsel" : user.role}
               </span>
             </div>
 
@@ -205,7 +205,7 @@ export function ProfileDropdown({
               {displayName}
             </p>
             <p className="text-xs text-primary/80 dark:text-white/80 whitespace-nowrap">
-              {user.role === "OWNER" ? "Principle Counsel" : user.role}
+              {user.role === "OWNER" ? "Principal Counsel" : user.role}
             </p>
           </div>
         )}

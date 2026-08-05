@@ -44,7 +44,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
-      </body>
+      {/* impeccable-live-start */}
+<script src="http://localhost:8400/live.js?token=8a56207d-7d2e-4561-98de-e0e513fc23d2"></script>
+{/* impeccable-live-end */}
+</body>
     </html>
   );
 }
