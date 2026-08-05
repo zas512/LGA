@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CreditCard,
   LayoutDashboard,
+  ListChecks,
   Scale,
   Users
 } from "lucide-react";
@@ -54,6 +55,12 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       title: "Matters & Cases",
       href: "/matters",
       icon: Scale,
+      roles: ["OWNER", "ADMIN", "ASSOCIATE"]
+    },
+    {
+      title: "Tasks",
+      href: "/tasks",
+      icon: ListChecks,
       roles: ["OWNER", "ADMIN", "ASSOCIATE"]
     },
     {

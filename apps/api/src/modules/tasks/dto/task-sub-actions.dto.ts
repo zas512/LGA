@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString
+} from "class-validator";
+import { TaskAttachmentKind } from "../../../generated/prisma/client";
 
 export class CreateTaskNoteDto {
   @IsString()
@@ -7,6 +13,10 @@ export class CreateTaskNoteDto {
 }
 
 export class CreateTaskAttachmentDto {
+  @IsEnum(TaskAttachmentKind)
+  @IsOptional()
+  kind?: TaskAttachmentKind;
+
   @IsString()
   @IsNotEmpty()
   fileUrl!: string;
@@ -14,4 +24,16 @@ export class CreateTaskAttachmentDto {
   @IsString()
   @IsOptional()
   label?: string;
+
+  @IsString()
+  @IsOptional()
+  fileName?: string;
+
+  @IsString()
+  @IsOptional()
+  mimeType?: string;
+
+  @IsString()
+  @IsOptional()
+  cloudinaryPublicId?: string;
 }

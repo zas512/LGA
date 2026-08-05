@@ -55,6 +55,21 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   JWT_REFRESH_EXPIRES_IN: string;
+
+  // Optional: signed Cloudinary uploads for task attachments. The API boots
+  // without them; /tasks/uploads/signature degrades to a clear error until
+  // all three are present.
+  @IsString()
+  @IsOptional()
+  CLOUDINARY_CLOUD_NAME?: string;
+
+  @IsString()
+  @IsOptional()
+  CLOUDINARY_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  CLOUDINARY_API_SECRET?: string;
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvironmentVariables {

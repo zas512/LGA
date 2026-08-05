@@ -27,8 +27,8 @@ import { MatterDocuments } from "./MatterDocuments";
 import { MatterHearings } from "./MatterHearings";
 import { MatterOverview } from "./MatterOverview";
 import { MatterParties } from "./MatterParties";
-import { MatterTasks } from "./MatterTasks";
 import { MatterTimeline } from "./MatterTimeline";
+import { TasksBoard } from "@/components/tasks/TasksBoard";
 export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
   const [activeTab, setActiveTab] = useState<
     "overview" | "timeline" | "hearings" | "tasks" | "documents" | "parties"
@@ -356,7 +356,9 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
         {activeTab === "hearings" && (
           <MatterHearings id={id} userRole={userRole} />
         )}
-        {activeTab === "tasks" && <MatterTasks id={id} userRole={userRole} />}
+        {activeTab === "tasks" && (
+          <TasksBoard matterId={id} userRole={userRole} />
+        )}
         {activeTab === "documents" && (
           <MatterDocuments id={id} userRole={userRole} />
         )}

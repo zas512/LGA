@@ -1,4 +1,15 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, IsNumber, IsISO8601 } from "class-validator";
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsEnum,
+  IsISO8601,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID
+} from "class-validator";
 import { TaskType, TaskPriority } from "../../../generated/prisma/client";
 
 export class CreateTaskDto {
@@ -10,9 +21,11 @@ export class CreateTaskDto {
   @IsOptional()
   hearingId?: string;
 
-  @IsUUID()
-  @IsNotEmpty()
-  assignedToId!: string;
+  @IsArray()
+  @ArrayNotEmpty({ message: "Assign at least one associate" })
+  @ArrayUnique({ message: "Duplicate assignees are not allowed" })
+  @IsUUID(undefined, { each: true })
+  assignedToIds!: string[];
 
   @IsString()
   @IsNotEmpty()

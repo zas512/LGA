@@ -2,8 +2,10 @@ import { Expose, Type } from "class-transformer";
 import {
   TaskType,
   TaskStatus,
-  TaskPriority
+  TaskPriority,
+  TaskAttachmentKind
 } from "../../../generated/prisma/client";
+import { AssociateMinEntity } from "../../hr/attendance/entities/attendance.entity";
 
 export class TaskNoteSummaryEntity {
   @Expose()
@@ -17,11 +19,18 @@ export class TaskNoteSummaryEntity {
 
   @Expose()
   createdAt!: Date;
+
+  @Expose()
+  @Type(() => AssociateMinEntity)
+  author?: AssociateMinEntity;
 }
 
 export class TaskAttachmentSummaryEntity {
   @Expose()
   id!: string;
+
+  @Expose()
+  kind!: TaskAttachmentKind;
 
   @Expose()
   fileUrl!: string;
@@ -30,10 +39,49 @@ export class TaskAttachmentSummaryEntity {
   label?: string | null;
 
   @Expose()
+  fileName?: string | null;
+
+  @Expose()
+  mimeType?: string | null;
+
+  @Expose()
+  cloudinaryPublicId?: string | null;
+
+  @Expose()
   uploadedById!: string;
 
   @Expose()
   createdAt!: Date;
+
+  @Expose()
+  @Type(() => AssociateMinEntity)
+  uploadedBy?: AssociateMinEntity;
+}
+
+export class TaskAssigneeSummaryEntity {
+  @Expose()
+  id!: string;
+
+  @Expose()
+  associateId!: string;
+
+  @Expose()
+  assignedAt!: Date;
+
+  @Expose()
+  @Type(() => AssociateMinEntity)
+  associate?: AssociateMinEntity;
+}
+
+export class TaskMatterSummaryEntity {
+  @Expose()
+  id!: string;
+
+  @Expose()
+  firmCaseNumber!: string;
+
+  @Expose()
+  clientName!: string;
 }
 
 export class TaskEntity {
@@ -50,10 +98,7 @@ export class TaskEntity {
   hearingId?: string | null;
 
   @Expose()
-  assignedById!: string;
-
-  @Expose()
-  assignedToId!: string;
+  createdById!: string;
 
   @Expose()
   title!: string;
@@ -74,6 +119,7 @@ export class TaskEntity {
   dueDate?: Date | null;
 
   @Expose()
+  @Type(() => Number)
   estimatedHours?: number | null;
 
   @Expose()
@@ -97,6 +143,18 @@ export class TaskEntity {
     }
     return false;
   }
+
+  @Expose()
+  @Type(() => TaskMatterSummaryEntity)
+  matter?: TaskMatterSummaryEntity;
+
+  @Expose()
+  @Type(() => AssociateMinEntity)
+  createdBy?: AssociateMinEntity;
+
+  @Expose()
+  @Type(() => TaskAssigneeSummaryEntity)
+  assignees?: TaskAssigneeSummaryEntity[];
 
   @Expose()
   @Type(() => TaskNoteSummaryEntity)

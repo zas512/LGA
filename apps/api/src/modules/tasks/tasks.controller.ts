@@ -1,13 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
-  Query,
-  ForbiddenException
+  Query
 } from "@nestjs/common";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/access-token.strategy";
@@ -21,13 +22,38 @@ import {
 import { TasksService } from "./tasks.service";
 import { TaskEntity } from "./entities/task.entity";
 import { UsersService } from "../users/users.service";
+import { CloudinaryService } from "../cloudinary/cloudinary.service";
 
 @Controller("tasks")
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly cloudinaryService: CloudinaryService
   ) {}
+
+  // Must be declared before @Get(":id") so the literal path is not swallowed
+  // by the UUID route param.
+  @Get("assignees")
+  async listAssignees(
+    @CurrentUser() user: JwtPayload
+  ): Promise<{ id: string; name: string; email: string | null }[]> {
+    if (!user.firmId) {
+      throw new ForbiddenException("Must belong to a firm");
+    }
+    const associateId = await this.usersService.resolveAssociateId(user.sub);
+    return this.tasksService.listAssignees(user.firmId, user.role, associateId);
+  }
+
+  @Get("uploads/signature")
+  getUploadSignature(@CurrentUser() user: JwtPayload) {
+    if (!user.firmId) {
+      throw new ForbiddenException("Must belong to a firm");
+    }
+    const timestamp = Math.floor(Date.now() / 1000);
+    const folder = `lga/firms/${user.firmId}/tasks`;
+    return this.cloudinaryService.signUpload({ timestamp, folder });
+  }
 
   @Post()
   async create(
@@ -127,5 +153,17 @@ export class TasksController {
     }
     const associateId = await this.usersService.resolveAssociateId(user.sub);
     return this.tasksService.complete(id, user.firmId, associateId, dto);
+  }
+
+  @Delete(":id")
+  async remove(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload
+  ): Promise<{ success: boolean }> {
+    if (!user.firmId) {
+      throw new ForbiddenException("Must belong to a firm");
+    }
+    const associateId = await this.usersService.resolveAssociateId(user.sub);
+    return this.tasksService.remove(id, user.firmId, user.role, associateId);
   }
 }

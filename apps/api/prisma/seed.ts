@@ -400,9 +400,11 @@ async function main() {
       data: {
         firmId: firm.id,
         matterId: matter1.id,
-        assignedById: hammadAssoc.id,
-        assignedToId: associateAssoc.id,
+        createdById: hammadAssoc.id,
         title: "Draft proposed issues for framing",
+        assignees: {
+          create: [{ associateId: associateAssoc.id }]
+        },
         description:
           "Analyze written statements and plaints to extract the key legal issues to propose on 2026-08-15.",
         taskType: "LEGAL_RESEARCH",
@@ -422,9 +424,11 @@ async function main() {
       data: {
         firmId: firm.id,
         matterId: matter2.id,
-        assignedById: adminAssoc.id,
-        assignedToId: associateAssoc.id,
+        createdById: adminAssoc.id,
         title: "Retrieve certified copy of FIR",
+        assignees: {
+          create: [{ associateId: associateAssoc.id }]
+        },
         description:
           "Obtain the certified copy of FIR 234/2026 from the police clerk.",
         taskType: "DOCUMENT_FILING",
