@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Check, ClipboardCheck, Inbox, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -48,7 +49,7 @@ function rangeLabel(r: LeaveRequest): string {
  * inline via `PATCH /api/leave/:id/status`. Decided requests drop out of the
  * list — a hard refresh re-reads the truth from the backend.
  */
-export function PendingApprovals() {
+export function PendingApprovals({ className }: { className?: string }) {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -105,7 +106,7 @@ export function PendingApprovals() {
   const pending = requests.length;
 
   return (
-    <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
+    <Card className={cn("skeuo-card bg-card text-card-foreground relative overflow-hidden", className)}>
       <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
       <CardHeader className="flex flex-row items-center justify-between pb-3 pt-4">
         <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">

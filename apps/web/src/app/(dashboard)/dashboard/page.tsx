@@ -1,38 +1,13 @@
-import dynamic from "next/dynamic";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { AssociateDashboard } from "@/components/dashboard/AssociateDashboard";
 import { SuperAdminDashboard } from "@/components/dashboard/SuperAdminDashboard";
-import { PendingApprovals } from "@/components/dashboard/PendingApprovals";
-import { UpcomingHearings } from "@/components/dashboard/UpcomingHearings";
+import { OwnerDashboardBoard } from "@/components/dashboard/OwnerDashboardBoard";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPKR } from "@/lib/format";
 import { backendFetch } from "@/lib/server-api";
 import { getSession } from "@/lib/session";
-import {
-  AlertTriangle,
-  Laptop,
-  Palmtree,
-  Receipt,
-  UserCheck,
-  Users,
-  UserX,
-  Wallet
-} from "lucide-react";
-
-const DashboardAnalytics = dynamic(
-  () =>
-    import("@/components/dashboard/DashboardAnalytics").then(
-      (mod) => mod.DashboardAnalytics
-    ),
-  {
-    loading: () => (
-      <div className="flex items-center justify-center py-16 text-xs font-semibold text-muted-foreground">
-        Loading analytics...
-      </div>
-    )
-  }
-);
+import { redirect } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 
 interface AttendanceRecord {
   id: string;
@@ -212,42 +187,26 @@ async function loadFirmStats(): Promise<FirmStats> {
   }
 }
 
-function StatTile({
-  icon,
-  label,
-  value
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | null;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 ring-1 ring-inset ring-border/40 py-2.5 px-1 text-center">
-      {icon}
-      <span className="text-sm font-black text-foreground">
-        {value == null ? "—" : value}
-      </span>
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-    </div>
-  );
-}
-
 export default async function DashboardPage() {
   const { user } = await getSession();
 
-  if (user?.role === "SUPER_ADMIN") {
+  // Defensive — the (dashboard) layout already redirects unauthenticated
+  // visitors, but this also narrows `user` to non-null for the code below.
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (user.role === "SUPER_ADMIN") {
     return <SuperAdminDashboard />;
   }
 
   // ADMIN: expenses are the only surface they manage.
-  if (user?.role === "ADMIN") {
+  if (user.role === "ADMIN") {
     return <AdminDashboard />;
   }
 
   // ASSOCIATE: personal tasks + attendance, no firm-wide stats.
-  if (user?.role === "ASSOCIATE") {
+  if (user.role === "ASSOCIATE") {
     return <AssociateDashboard />;
   }
 
@@ -313,107 +272,22 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* 2 Executive Metric Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Metric 1: Total Associates */}
-        <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Total Associates
-            </CardTitle>
-            <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <Users className="h-4 w-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="text-4xl font-black text-foreground tracking-tight">
-              {totalAssociates == null ? "—" : totalAssociates}
-            </div>
-            <p className="text-xs text-muted-foreground font-semibold mt-1 mb-4">
-              Firm-wide headcount
-            </p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <StatTile
-                icon={<UserCheck className="h-3.5 w-3.5 text-success" />}
-                label="Present"
-                value={present}
-              />
-              <StatTile
-                icon={<UserX className="h-3.5 w-3.5 text-destructive" />}
-                label="Absent"
-                value={absent}
-              />
-              <StatTile
-                icon={<Palmtree className="h-3.5 w-3.5 text-warning" />}
-                label="On Leave"
-                value={leave}
-              />
-              <StatTile
-                icon={<Laptop className="h-3.5 w-3.5 text-info" />}
-                label="Remote"
-                value={remote}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Metric 2: Expense & Billing Overview */}
-        <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Total Expenses & Billings
-            </CardTitle>
-            <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <Receipt className="h-4 w-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="text-4xl font-black text-foreground tracking-tight">
-              {expenseValue}
-            </div>
-            <p className="text-xs text-muted-foreground font-semibold mt-1 mb-4">
-              Fixed salaries + manual operational expenses (PKR)
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1 rounded-lg bg-muted/50 px-3 py-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Wallet className="h-3.5 w-3.5 text-success" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Fixed Salaries
-                  </span>
-                </div>
-                <span className="text-lg font-bold text-foreground">
-                  {fixedValue}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 rounded-lg bg-muted/50 px-3 py-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Receipt className="h-3.5 w-3.5 text-destructive" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Manual Expenses
-                  </span>
-                </div>
-                <span className="text-lg font-bold text-foreground">
-                  {manualValue}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Upcoming Tareekh + Pending approvals — the day's two "what needs me" queues. */}
-      <div className="grid gap-6 lg:grid-cols-2 items-start">
-        <UpcomingHearings hearings={hearings} ok={hearingsOk} />
-        <PendingApprovals />
-      </div>
-
-      {/* Analytics & Data Table */}
-      <DashboardAnalytics expenses={expenses} />
+      {/* Reorderable landing — every card is a tile the owner can drag into
+          their preferred arrangement (persisted per user). */}
+      <OwnerDashboardBoard
+        userId={user.sub}
+        totalAssociates={totalAssociates}
+        present={present}
+        absent={absent}
+        leave={leave}
+        remote={remote}
+        expenseValue={expenseValue}
+        fixedValue={fixedValue}
+        manualValue={manualValue}
+        hearings={hearings}
+        hearingsOk={hearingsOk}
+        expenses={expenses}
+      />
     </div>
   );
 }

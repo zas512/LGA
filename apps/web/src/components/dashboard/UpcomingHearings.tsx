@@ -1,6 +1,7 @@
 import type { UpcomingHearing } from "@/app/(dashboard)/dashboard/page";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   CalendarDays,
   CalendarX2,
@@ -98,10 +99,12 @@ function HearingRow({ hearing }: { hearing: UpcomingHearing }) {
  */
 export function UpcomingHearings({
   hearings,
-  ok
+  ok,
+  className
 }: {
   hearings: UpcomingHearing[];
   ok: boolean;
+  className?: string;
 }) {
   const upcoming = [...hearings].sort(
     (a, b) =>
@@ -109,7 +112,7 @@ export function UpcomingHearings({
   );
 
   return (
-    <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
+    <Card className={cn("skeuo-card bg-card text-card-foreground relative overflow-hidden", className)}>
       <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
       <CardHeader className="flex flex-row items-center justify-between pb-3 pt-4">
         <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
