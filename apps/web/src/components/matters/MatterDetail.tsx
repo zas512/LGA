@@ -169,7 +169,7 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
       </div>
 
       <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">

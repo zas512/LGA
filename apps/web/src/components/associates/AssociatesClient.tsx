@@ -292,7 +292,7 @@ export function AssociatesClient({
       {/* ========================================================= */}
       {ownerMember && (
         <Card className="border-border bg-card text-card-foreground shadow-xs relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
           <CardHeader className="pb-2">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">

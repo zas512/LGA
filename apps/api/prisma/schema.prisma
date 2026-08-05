@@ -91,11 +91,12 @@ model Associate {
   leaveRequests      LeaveRequest[]
   leaveBalances      LeaveBalance[]
   expenses           Expense[]         @relation("ExpenseForAssociate")
-  matters            MatterAssociate[]
-  hearingAttendances HearingAttendee[]
-  tasksAssigned      Task[]            @relation("TaskAssignee")
-  tasksCreated       Task[]            @relation("TaskAssigner")
-  taskNotes          TaskNote[]
+  matters              MatterAssociate[]
+  hearingAttendances   HearingAttendee[]
+  taskAssignments      TaskAssignee[]
+  createdTasks         Task[]            @relation("TaskCreator")
+  taskNotes            TaskNote[]
+  uploadedAttachments  TaskAttachment[]
 }
 
 enum EmploymentType {
@@ -446,8 +447,7 @@ model Task {
   firmId          String
   matterId        String?      // nullable: independent tasks allowed
   hearingId       String?      // optional: task tied to hearing prep
-  assignedById    String
-  assignedToId    String
+  createdById     String
   title           String
   description     String?
   taskType        TaskType?
@@ -462,13 +462,25 @@ model Task {
   firm        Firm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
   matter      Matter?          @relation(fields: [matterId], references: [id])
   hearing     Hearing?         @relation(fields: [hearingId], references: [id])
-  assignedTo  Associate        @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  assignedBy  Associate        @relation("TaskAssigner", fields: [assignedById], references: [id])
+  createdBy   Associate        @relation("TaskCreator", fields: [createdById], references: [id])
+  assignees   TaskAssignee[]
   notes       TaskNote[]
   attachments TaskAttachment[]
 
-  @@index([assignedToId, status, dueDate])
+  @@index([createdById, status, dueDate])
   @@index([matterId])
+}
+
+model TaskAssignee {
+  id          String   @id @default(uuid())
+  taskId      String
+  associateId String
+  assignedAt  DateTime @default(now())
+
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  associate Associate @relation(fields: [associateId], references: [id])
+
+  @@unique([taskId, associateId])
 }
 
 model TaskNote {
@@ -482,15 +494,25 @@ model TaskNote {
   author Associate @relation(fields: [authorId], references: [id])
 }
 
-model TaskAttachment {
-  id           String   @id @default(uuid())
-  taskId       String
-  fileUrl      String
-  label        String?  // "Court stamp copy", "Filed petition scan"
-  uploadedById String
-  createdAt    DateTime @default(now())
+enum TaskAttachmentKind {
+  FILE
+  LINK
+}
 
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+model TaskAttachment {
+  id                 String             @id @default(uuid())
+  taskId             String
+  kind               TaskAttachmentKind @default(FILE)
+  fileUrl            String
+  label              String?            // "Court stamp copy", "Filed petition scan"
+  fileName           String?
+  mimeType           String?
+  cloudinaryPublicId String?
+  uploadedById       String
+  createdAt          DateTime           @default(now())
+
+  task       Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy Associate @relation(fields: [uploadedById], references: [id])
 }
 
 // ==========================================

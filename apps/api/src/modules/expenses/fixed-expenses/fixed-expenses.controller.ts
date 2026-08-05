@@ -1,38 +1,62 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { FixedExpensesService } from './fixed-expenses.service';
-import { CreateFixedExpenseDto } from './dto/create-fixed-expense.dto';
-import { UpdateFixedExpenseDto } from './dto/update-fixed-expense.dto';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { UserRole } from '../../../generated/prisma/client';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post
+} from "@nestjs/common";
+import { UserRole } from "../../../generated/prisma/client";
+import { CurrentUser } from "../../auth/decorators/current-user.decorator";
+import { Roles } from "../../auth/decorators/roles.decorator";
+import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import { ExpenseEntity } from "../entities/expense.entity";
+import { CreateFixedExpenseDto } from "./dto/create-fixed-expense.dto";
+import { UpdateFixedExpenseDto } from "./dto/update-fixed-expense.dto";
+import { FixedExpensesService } from "./fixed-expenses.service";
 
-// TODO: unimplemented Nest CLI scaffold — see leave.controller.ts.
 @Roles(UserRole.OWNER, UserRole.ADMIN)
-@Controller('fixed-expenses')
+@Controller("fixed-expenses")
 export class FixedExpensesController {
   constructor(private readonly fixedExpensesService: FixedExpensesService) {}
 
   @Post()
-  create(@Body() createFixedExpenseDto: CreateFixedExpenseDto) {
-    return this.fixedExpensesService.create(createFixedExpenseDto);
+  create(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateFixedExpenseDto
+  ): Promise<ExpenseEntity> {
+    return this.fixedExpensesService.create(user, dto);
   }
 
   @Get()
-  findAll() {
-    return this.fixedExpensesService.findAll();
+  findAll(@CurrentUser() user: JwtPayload): Promise<ExpenseEntity[]> {
+    return this.fixedExpensesService.findAll(user);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.fixedExpensesService.findOne(+id);
+  @Get(":id")
+  findOne(
+    @CurrentUser() user: JwtPayload,
+    @Param("id", ParseUUIDPipe) id: string
+  ): Promise<ExpenseEntity> {
+    return this.fixedExpensesService.findOne(user, id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFixedExpenseDto: UpdateFixedExpenseDto) {
-    return this.fixedExpensesService.update(+id, updateFixedExpenseDto);
+  @Patch(":id")
+  update(
+    @CurrentUser() user: JwtPayload,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateFixedExpenseDto
+  ): Promise<ExpenseEntity> {
+    return this.fixedExpensesService.update(user, id, dto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.fixedExpensesService.remove(+id);
+  @Delete(":id")
+  remove(
+    @CurrentUser() user: JwtPayload,
+    @Param("id", ParseUUIDPipe) id: string
+  ): Promise<void> {
+    return this.fixedExpensesService.remove(user, id);
   }
 }

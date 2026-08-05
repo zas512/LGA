@@ -606,7 +606,7 @@ export default function AttendancePage() {
         {/* Stats Metrics Cards */}
         <div className="md:col-span-2 grid gap-4 grid-cols-1 sm:grid-cols-2">
           {/* Card 1: Hours worked */}
-          <Card className="border border-border bg-card shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden flex flex-col justify-between">
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                 <span>Working Hours Logged</span>
@@ -624,7 +624,7 @@ export default function AttendancePage() {
           </Card>
 
           {/* Card 2: Attendance Rate / Present count */}
-          <Card className="border border-border bg-card shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden flex flex-col justify-between">
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                 <span>Days Accounted</span>
@@ -642,7 +642,7 @@ export default function AttendancePage() {
           </Card>
 
           {/* Card 3: Avg shift duration */}
-          <Card className="border border-border bg-card shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden flex flex-col justify-between">
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                 <span>Avg. Shift Duration</span>

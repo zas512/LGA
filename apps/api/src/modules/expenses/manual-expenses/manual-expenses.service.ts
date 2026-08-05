@@ -1,26 +1,41 @@
-import { Injectable } from '@nestjs/common';
-import { CreateManualExpenseDto } from './dto/create-manual-expense.dto';
-import { UpdateManualExpenseDto } from './dto/update-manual-expense.dto';
+import { Injectable } from "@nestjs/common";
+import { ExpenseType } from "../../../generated/prisma/client";
+import type { JwtPayload } from "../../auth/strategies/access-token.strategy";
+import { ExpenseEntity } from "../entities/expense.entity";
+import { ExpensesService } from "../expenses.service";
+import { CreateManualExpenseDto } from "./dto/create-manual-expense.dto";
+import { UpdateManualExpenseDto } from "./dto/update-manual-expense.dto";
 
+/**
+ * MANUAL expenses delegate to the shared, firm-scoped ExpensesService.
+ * Kept as its own provider so the two modules stay self-contained and the
+ * routes remain `manual-expenses/*`.
+ */
 @Injectable()
 export class ManualExpensesService {
-  create(createManualExpenseDto: CreateManualExpenseDto) {
-    return 'This action adds a new manualExpense';
+  constructor(private readonly expensesService: ExpensesService) {}
+
+  create(user: JwtPayload, dto: CreateManualExpenseDto): Promise<ExpenseEntity> {
+    return this.expensesService.createExpense(user, ExpenseType.MANUAL, dto);
   }
 
-  findAll() {
-    return `This action returns all manualExpenses`;
+  findAll(user: JwtPayload): Promise<ExpenseEntity[]> {
+    return this.expensesService.findAllForFirm(user);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} manualExpense`;
+  findOne(user: JwtPayload, id: string): Promise<ExpenseEntity> {
+    return this.expensesService.findOneForFirm(user, id);
   }
 
-  update(id: number, updateManualExpenseDto: UpdateManualExpenseDto) {
-    return `This action updates a #${id} manualExpense`;
+  update(
+    user: JwtPayload,
+    id: string,
+    dto: UpdateManualExpenseDto
+  ): Promise<ExpenseEntity> {
+    return this.expensesService.updateExpense(user, id, dto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} manualExpense`;
+  remove(user: JwtPayload, id: string): Promise<void> {
+    return this.expensesService.removeExpense(user, id);
   }
 }

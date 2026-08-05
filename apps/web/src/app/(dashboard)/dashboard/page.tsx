@@ -156,9 +156,9 @@ function StatTile({
   value: number | null;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 py-2.5 px-1 text-center">
+    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 ring-1 ring-inset ring-border/40 py-2.5 px-1 text-center">
       {icon}
-      <span className="text-sm font-bold text-foreground">
+      <span className="text-sm font-black text-foreground">
         {value == null ? "—" : value}
       </span>
       <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -199,8 +199,8 @@ export default async function DashboardPage() {
       {/* 2 Executive Metric Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Metric 1: Total Associates */}
-        <Card className="border-border bg-card text-card-foreground shadow-xs relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+        <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
           <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Total Associates
@@ -243,8 +243,8 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Metric 2: Expense & Billing Overview */}
-        <Card className="border-border bg-card text-card-foreground shadow-xs relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+        <Card className="skeuo-card bg-card text-card-foreground relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/80 to-chart-2" />
           <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Total Expenses & Billings

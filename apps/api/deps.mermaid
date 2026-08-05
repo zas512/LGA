@@ -3,6 +3,10 @@ graph LR
   AttendanceModule --> AppModule
   AuthModule --> AppModule
   CaseDocumentsModule --> AppModule
+  ExpensesModule --> AppModule
+  ExpensesModule --> FixedExpensesModule
+  ExpensesModule --> ManualExpensesModule
+  ExpensesModule --> RecurringExpensesModule
   FirmsModule --> AppModule
   FixedExpensesModule --> AppModule
   HearingsModule --> AppModule
@@ -16,14 +20,17 @@ graph LR
   PrismaModule --> AttendanceModule
   PrismaModule --> AuthModule
   PrismaModule --> CaseDocumentsModule
+  PrismaModule --> ExpensesModule
   PrismaModule --> FirmsModule
   PrismaModule --> FixedExpensesModule
   PrismaModule --> HearingsModule
   PrismaModule --> LeaveModule
   PrismaModule --> ManualExpensesModule
   PrismaModule --> MattersModule
+  PrismaModule --> RecurringExpensesModule
   PrismaModule --> TasksModule
   PrismaModule --> UsersModule
+  RecurringExpensesModule --> AppModule
   TasksModule --> AppModule
   UsersModule --> AppModule
   UsersModule --> AssociatesModule

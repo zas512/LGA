@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/utils";
 import { RootState } from "@/redux/store";
 import { Bell, Play, Search, Square } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
@@ -14,6 +15,15 @@ interface HeaderProps {
   userRole?: string;
 }
 
+// Breadcrumb parent labels, keyed by the first route segment.
+const SEGMENT_LABELS: Record<string, string> = {
+  dashboard: "Operations",
+  matters: "Matters & Cases",
+  associates: "Associates & Staff",
+  attendance: "Attendance & Leaves",
+  platform: "Platform"
+};
+
 export function Header({
   title: propTitle,
   breadcrumb: propBreadcrumb
@@ -21,7 +31,12 @@ export function Header({
   const reduxHeader = useSelector((state: RootState) => state.header);
   const title = propTitle ?? reduxHeader.title;
   const breadcrumb = propBreadcrumb ?? reduxHeader.breadcrumb;
+  const pathname = usePathname();
   const { user, refreshUser } = useAuth();
+
+  // Derive the breadcrumb parent from the active route instead of a fixed label.
+  const parentLabel = SEGMENT_LABELS[pathname?.split("/")[1] ?? ""];
+  const breadcrumbIsPath = breadcrumb.includes("/");
 
   const isCheckedIn = user?.isCheckedIn ?? false;
   const activeCheckInTime = user?.activeCheckInTime;
@@ -89,8 +104,12 @@ export function Header({
       {/* Left: Breadcrumb & Title */}
       <div>
         <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
-          <span>Billing & Operations</span>
-          <span>/</span>
+          {!breadcrumbIsPath && parentLabel && (
+            <>
+              <span>{parentLabel}</span>
+              <span>/</span>
+            </>
+          )}
           <span className="text-primary font-bold">{breadcrumb}</span>
         </p>
         <h1 className="text-2xl font-black tracking-tight text-foreground mt-0.5">

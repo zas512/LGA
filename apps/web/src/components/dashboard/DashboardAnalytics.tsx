@@ -85,7 +85,7 @@ function EmptyChartState({
   description: string;
 }) {
   return (
-    <Card className="md:col-span-12 border-border bg-card text-card-foreground shadow-xs">
+    <Card className="md:col-span-12 skeuo-card bg-card text-card-foreground">
       <CardHeader>
         <CardTitle className="text-sm font-bold flex items-center gap-2">
           <PieIcon className="h-4 w-4 text-primary" />
@@ -137,7 +137,7 @@ export function DashboardAnalytics({
       {/* Charts Grid */}
       <div className="grid gap-6 md:grid-cols-12">
         {/* Left Chart: Monthly Expense Trends */}
-        <Card className="md:col-span-7 border-border bg-card text-card-foreground shadow-xs">
+        <Card className="md:col-span-7 skeuo-card bg-card text-card-foreground">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -220,7 +220,7 @@ export function DashboardAnalytics({
         </Card>
 
         {/* Right Chart: Category Breakdown Donut */}
-        <Card className="md:col-span-5 border-border bg-card text-card-foreground shadow-xs">
+        <Card className="md:col-span-5 skeuo-card bg-card text-card-foreground">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-sm font-bold flex items-center gap-2">

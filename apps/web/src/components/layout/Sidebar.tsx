@@ -6,6 +6,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   LayoutDashboard,
   Scale,
   Users
@@ -66,6 +67,12 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       href: "/attendance",
       icon: Calendar,
       roles: ["OWNER", "ADMIN", "ASSOCIATE"]
+    },
+    {
+      title: "Expenses & Billing",
+      href: "/expenses",
+      icon: CreditCard,
+      roles: ["OWNER", "ADMIN"]
     },
     {
       title: "Firms Management",

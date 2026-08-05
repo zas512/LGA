@@ -16,6 +16,8 @@ import { AttendanceModule } from "./modules/hr/attendance/attendance.module";
 import { LeaveModule } from "./modules/hr/leave/leave.module";
 import { FixedExpensesModule } from "./modules/expenses/fixed-expenses/fixed-expenses.module";
 import { ManualExpensesModule } from "./modules/expenses/manual-expenses/manual-expenses.module";
+import { ExpensesModule } from "./modules/expenses/expenses.module";
+import { RecurringExpensesModule } from "./modules/expenses/recurring-expenses/recurring-expenses.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { UsersModule } from "./modules/users/users.module";
 import { MattersModule } from "./modules/matters/matters.module";
@@ -41,6 +43,8 @@ import { CaseDocumentsModule } from "./modules/case-documents/case-documents.mod
     LeaveModule,
     FixedExpensesModule,
     ManualExpensesModule,
+    ExpensesModule,
+    RecurringExpensesModule,
     FirmsModule,
     MattersModule,
     HearingsModule,

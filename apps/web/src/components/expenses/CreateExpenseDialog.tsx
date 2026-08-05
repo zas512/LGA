@@ -1,0 +1,430 @@
+"use client";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import * as z from "zod";
+
+export const EXPENSE_CATEGORIES = [
+  "Salaries (HR)",
+  "Office & Rent",
+  "Utilities",
+  "Subscriptions",
+  "Client Costs",
+  "Stationery & Supplies",
+  "Legal Fees",
+  "Travel",
+  "Other"
+] as const;
+
+const PAYMENT_METHODS = [
+  "Cash",
+  "Bank Transfer",
+  "Credit Card",
+  "Cheque",
+  "Online Wallet",
+  "Other"
+] as const;
+
+const createExpenseSchema = z.object({
+  type: z.enum(["FIXED", "MANUAL"]),
+  category: z.string().min(1, { message: "Select a category" }),
+  description: z
+    .string()
+    .min(1, { message: "Description is required" })
+    .max(300, { message: "Keep the description under 300 characters" }),
+  amount: z
+    .number({ message: "Enter a valid amount" })
+    .min(0.01, { message: "Amount must be at least 0.01" }),
+  date: z.string().min(1, { message: "Date is required" }),
+  vendor: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  receiptUrl: z
+    .union([z.literal(""), z.string().url({ message: "Enter a valid URL" })])
+    .optional(),
+  associateId: z.string().optional()
+});
+
+type CreateExpenseValues = z.infer<typeof createExpenseSchema>;
+
+interface AssociateOption {
+  id: string;
+  name?: string | null;
+  email: string;
+  role: string;
+}
+
+function todayStr(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+interface CreateExpenseDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function CreateExpenseDialog({
+  open,
+  onOpenChange
+}: Readonly<CreateExpenseDialogProps>) {
+  const queryClient = useQueryClient();
+
+  const { data: allAssociates = [] } = useQuery<AssociateOption[]>({
+    queryKey: ["associates"],
+    queryFn: async () => {
+      const res = await fetch("/api/associates");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: open
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting }
+  } = useForm<CreateExpenseValues>({
+    resolver: zodResolver(createExpenseSchema),
+    defaultValues: {
+      type: "FIXED",
+      category: "",
+      description: "",
+      amount: undefined,
+      date: todayStr(),
+      vendor: "",
+      paymentMethod: "",
+      receiptUrl: "",
+      associateId: ""
+    }
+  });
+
+  const expenseType = watch("type");
+
+  const createMutation = useMutation({
+    mutationFn: async (values: CreateExpenseValues) => {
+      const payload = {
+        category: values.category,
+        description: values.description,
+        amount: Number(values.amount),
+        date: values.date,
+        vendor: values.vendor || undefined,
+        paymentMethod: values.paymentMethod || undefined,
+        receiptUrl: values.receiptUrl || undefined,
+        associateId: values.associateId || undefined
+      };
+      const url =
+        values.type === "FIXED"
+          ? "/api/fixed-expenses"
+          : "/api/manual-expenses";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          result.message || `Failed to record ${values.type.toLowerCase()} expense`
+        );
+      }
+      return result;
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(
+        `${variables.type === "FIXED" ? "Fixed" : "Manual"} expense recorded`
+      );
+      reset();
+      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to record expense");
+    }
+  });
+
+  const onSubmit = (values: CreateExpenseValues) => createMutation.mutate(values);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl bg-card border-border rounded-2xl shadow-xl max-h-[88vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-black text-foreground">
+            Record an Expense
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Log a fixed obligation or a one-off operational cost for the firm.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+          {/* Expense Type Toggle */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-foreground">
+              Expense Type *
+            </Label>
+            <div
+              role="group"
+              aria-label="Expense type"
+              className="grid grid-cols-2 gap-1 rounded-xl bg-muted/40 p-1"
+            >
+              {(["FIXED", "MANUAL"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={expenseType === t}
+                  onClick={() =>
+                    setValue("type", t, { shouldValidate: true })
+                  }
+                  className={cn(
+                    "h-9 rounded-lg text-xs font-bold transition-colors cursor-pointer",
+                    expenseType === t
+                      ? "bg-card text-foreground shadow-sm border border-border"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t === "FIXED" ? "Fixed Expense" : "Manual Expense"}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground font-medium">
+              {expenseType === "FIXED"
+                ? "Recurring obligations — salaries, rent, subscriptions."
+                : "One-off operational costs — travel, supplies, client disbursements."}
+            </p>
+          </div>
+
+          {/* Category + Date */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label
+                htmlFor="expenseCategory"
+                className="text-xs font-bold text-foreground"
+              >
+                Category *
+              </Label>
+              <select
+                id="expenseCategory"
+                {...register("category")}
+                className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
+              >
+                <option value="">Select a category</option>
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {errors.category && (
+                <p className="text-xs text-destructive font-semibold">
+                  {errors.category.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label
+                htmlFor="expenseDate"
+                className="text-xs font-bold text-foreground"
+              >
+                Date *
+              </Label>
+              <Input
+                id="expenseDate"
+                type="date"
+                {...register("date")}
+                className="text-sm rounded-xl border-border bg-card focus-visible:ring-primary/40"
+              />
+              {errors.date && (
+                <p className="text-xs text-destructive font-semibold">
+                  {errors.date.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1">
+            <Label
+              htmlFor="expenseDescription"
+              className="text-xs font-bold text-foreground"
+            >
+              Description *
+            </Label>
+            <Input
+              id="expenseDescription"
+              placeholder="e.g. Office rent for August, court fee advance"
+              {...register("description")}
+              className="text-sm rounded-xl border-border bg-card focus-visible:ring-primary/40"
+            />
+            {errors.description && (
+              <p className="text-xs text-destructive font-semibold">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
+
+          {/* Amount + Payment Method */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label
+                htmlFor="expenseAmount"
+                className="text-xs font-bold text-foreground"
+              >
+                Amount (PKR) *
+              </Label>
+              <Input
+                id="expenseAmount"
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="e.g. 25000"
+                {...register("amount", { valueAsNumber: true })}
+                className="text-sm rounded-xl border-border bg-card focus-visible:ring-primary/40 font-mono"
+              />
+              {errors.amount && (
+                <p className="text-xs text-destructive font-semibold">
+                  {errors.amount.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label
+                htmlFor="expensePaymentMethod"
+                className="text-xs font-bold text-foreground"
+              >
+                Payment Method
+              </Label>
+              <select
+                id="expensePaymentMethod"
+                {...register("paymentMethod")}
+                className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
+              >
+                <option value="">Not specified</option>
+                {PAYMENT_METHODS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Vendor + Receipt URL */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label
+                htmlFor="expenseVendor"
+                className="text-xs font-bold text-foreground"
+              >
+                Vendor
+              </Label>
+              <Input
+                id="expenseVendor"
+                placeholder="e.g. K-Electric, PTCL"
+                {...register("vendor")}
+                className="text-sm rounded-xl border-border bg-card focus-visible:ring-primary/40"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label
+                htmlFor="expenseReceiptUrl"
+                className="text-xs font-bold text-foreground"
+              >
+                Receipt URL
+              </Label>
+              <Input
+                id="expenseReceiptUrl"
+                type="url"
+                placeholder="https://..."
+                {...register("receiptUrl")}
+                className="text-sm rounded-xl border-border bg-card focus-visible:ring-primary/40"
+              />
+              {errors.receiptUrl && (
+                <p className="text-xs text-destructive font-semibold">
+                  {errors.receiptUrl.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Associate */}
+          <div className="space-y-1">
+            <Label
+              htmlFor="expenseAssociate"
+              className="text-xs font-bold text-foreground"
+            >
+              Associate
+            </Label>
+            <select
+              id="expenseAssociate"
+              {...register("associateId")}
+              className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
+            >
+              <option value="">Unassigned</option>
+              {allAssociates.map((assoc) => (
+                <option key={assoc.id} value={assoc.id}>
+                  {assoc.name || assoc.email}
+                </option>
+              ))}
+            </select>
+            {allAssociates.length === 0 && (
+              <p className="text-[11px] text-muted-foreground font-medium">
+                No associates in the firm roster to link.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                reset();
+                onOpenChange(false);
+              }}
+              className="rounded-xl text-sm font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="skeuo-button-primary rounded-xl text-sm font-bold gap-1.5"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Recording...</span>
+                </>
+              ) : (
+                <span>Record Expense</span>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

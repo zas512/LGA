@@ -1,0 +1,178 @@
+"use client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
+import { formatPKR } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { Loader2, Plus, RefreshCcw, Repeat, Trash2 } from "lucide-react";
+import type { RecurringTemplate } from "./ExpensesClient";
+
+const CYCLE_LABEL: Record<RecurringTemplate["billingCycle"], string> = {
+  MONTHLY: "Monthly",
+  QUARTERLY: "Quarterly",
+  ANNUALLY: "Annually"
+};
+
+function formatNextRun(dateIso: string): string {
+  if (!dateIso) return "Not scheduled";
+  const d = new Date(dateIso);
+  if (Number.isNaN(d.getTime())) return dateIso;
+  return d.toLocaleDateString("en-PK", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+interface RecurringTemplatesSectionProps {
+  templates: RecurringTemplate[];
+  isLoading: boolean;
+  isGenerating: boolean;
+  onGenerate: () => void;
+  onCreate: () => void;
+  onToggleActive: (template: RecurringTemplate) => void;
+  onDelete: (template: RecurringTemplate) => void;
+}
+
+export function RecurringTemplatesSection({
+  templates,
+  isLoading,
+  isGenerating,
+  onGenerate,
+  onCreate,
+  onToggleActive,
+  onDelete
+}: Readonly<RecurringTemplatesSectionProps>) {
+  return (
+    <Card className="border-border bg-card shadow-xs rounded-2xl overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border py-4 px-6 flex-wrap">
+        <CardTitle className="text-sm font-extrabold tracking-tight flex items-center gap-2">
+          <Repeat className="h-4 w-4 text-primary" />
+          Recurring Templates
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onGenerate}
+            disabled={isGenerating || isLoading}
+            className="rounded-full h-8 text-xs font-semibold dark:border-white/40 border-border"
+          >
+            {isGenerating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-3.5 w-3.5" />
+            )}
+            Generate Now
+          </Button>
+          <Button
+            size="sm"
+            onClick={onCreate}
+            disabled={isLoading}
+            className="rounded-full h-8 text-xs font-bold"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Template
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="p-8 flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading templates...
+          </div>
+        ) : templates.length === 0 ? (
+          <div className="p-8 text-center space-y-2">
+            <Repeat className="h-10 w-10 text-muted-foreground/40 mx-auto" />
+            <p className="font-bold text-foreground text-sm">
+              No recurring templates
+            </p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Set up a template to automatically generate fixed expenses on a
+              monthly, quarterly or annual cycle.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {templates.map((t) => (
+              <li
+                key={t.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-foreground text-sm truncate">
+                      {t.category}
+                    </span>
+                    <Badge
+                      variant={t.isActive ? "emerald" : "outline"}
+                      className="text-[10px]"
+                    >
+                      {t.isActive ? "Active" : "Paused"}
+                    </Badge>
+                  </div>
+                  <p
+                    className="text-xs text-muted-foreground truncate max-w-md mt-0.5"
+                    title={t.description}
+                  >
+                    {t.description}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1 font-mono">
+                    Next run: {formatNextRun(t.nextRunDate)}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0">
+                  <div className="text-right">
+                    <p className="font-black text-foreground text-sm whitespace-nowrap">
+                      {formatPKR(Number(t.amount) || 0)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground font-semibold uppercase">
+                      {CYCLE_LABEL[t.billingCycle]}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={t.isActive}
+                    aria-label={`${t.isActive ? "Pause" : "Activate"} ${t.category} template`}
+                    onClick={() => onToggleActive(t)}
+                    className={cn(
+                      "relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      t.isActive ? "bg-success" : "bg-muted-foreground/30"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                        t.isActive && "translate-x-5"
+                      )}
+                    />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onDelete(t)}
+                    className="p-1.5 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors cursor-pointer"
+                    title="Delete template"
+                    aria-label={`Delete ${t.category} template`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
