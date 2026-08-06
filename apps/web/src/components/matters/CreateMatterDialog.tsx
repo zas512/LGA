@@ -11,10 +11,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -93,6 +100,7 @@ export function CreateMatterDialog({
     reset,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<CreateMatterValues>({
     resolver: zodResolver(createMatterSchema),
@@ -193,19 +201,18 @@ export function CreateMatterDialog({
             >
               Link Client Record (optional)
             </Label>
-            <select
-              id="clientId"
-              value={selectedClientId}
-              onChange={(e) => handleClientSelect(e.target.value)}
-              className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-            >
-              <option value="">— Standalone (no client record) —</option>
-              {allClients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedClientId} onValueChange={handleClientSelect}>
+              <SelectTrigger className="rounded-xl h-8 font-semibold">
+                <SelectValue placeholder="— Standalone (no client record) —" />
+              </SelectTrigger>
+              <SelectContent>
+                {allClients.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
               Selecting a client pre-fills the display name below. Convert a
               lead first to make it selectable here.
@@ -265,19 +272,26 @@ export function CreateMatterDialog({
               >
                 Case Classification *
               </Label>
-              <select
-                id="caseType"
-                {...register("caseType")}
-                className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="CIVIL">Civil (CPC)</option>
-                <option value="CRIMINAL">Criminal (CrPC)</option>
-                <option value="WRIT">Writ Petition</option>
-                <option value="FAMILY">Family Law</option>
-                <option value="SERVICE">Service Matters</option>
-                <option value="CORPORATE">Corporate Law</option>
-                <option value="TAXATION">Taxation Law</option>
-              </select>
+              <Controller
+                control={control}
+                name="caseType"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select case type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CIVIL">Civil (CPC)</SelectItem>
+                      <SelectItem value="CRIMINAL">Criminal (CrPC)</SelectItem>
+                      <SelectItem value="WRIT">Writ Petition</SelectItem>
+                      <SelectItem value="FAMILY">Family Law</SelectItem>
+                      <SelectItem value="SERVICE">Service Matters</SelectItem>
+                      <SelectItem value="CORPORATE">Corporate Law</SelectItem>
+                      <SelectItem value="TAXATION">Taxation Law</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.caseType && (
                 <p className="text-xs text-destructive font-semibold">
                   {errors.caseType.message}

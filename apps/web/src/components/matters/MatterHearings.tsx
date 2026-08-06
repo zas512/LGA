@@ -12,13 +12,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { CustomTable } from "@/components/ui/table";
 import type { ColumnConfig } from "@/types/tableTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, FileText, Gavel, Loader2, Plus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -306,6 +313,7 @@ export function MatterHearings({
     reset: resetLog,
     setValue: setValueLog,
     watch: watchLog,
+    control: controlLog,
     formState: { errors: errorsLog, isSubmitting: isSubmittingLog }
   } = useForm<LogOutcomeValues>({
     resolver: zodResolver(logOutcomeSchema),
@@ -577,18 +585,29 @@ export function MatterHearings({
               >
                 Hearing Outcome Status *
               </Label>
-              <select
-                id="status"
-                {...registerLog("status")}
-                className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="HELD">Held / Proceeded</option>
-                <option value="ADJOURNED">Adjourned / Postponed</option>
-                <option value="SINE_DIE">
-                  Adjourned Sine Die (Indefinitely)
-                </option>
-                <option value="DECIDED">Decided / Judgment Reserved</option>
-              </select>
+              <Controller
+                control={controlLog}
+                name="status"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select outcome" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="HELD">Held / Proceeded</SelectItem>
+                      <SelectItem value="ADJOURNED">
+                        Adjourned / Postponed
+                      </SelectItem>
+                      <SelectItem value="SINE_DIE">
+                        Adjourned Sine Die (Indefinitely)
+                      </SelectItem>
+                      <SelectItem value="DECIDED">
+                        Decided / Judgment Reserved
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Proceedings Summary */}

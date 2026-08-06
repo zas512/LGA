@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { CustomTable } from "@/components/ui/table";
 import { getErrorMessage } from "@/lib/utils";
 import type { ColumnConfig } from "@/types/tableTypes";
@@ -732,19 +739,22 @@ export default function AttendancePage() {
               >
                 Associate
               </Label>
-              <select
-                id="filter-associate"
+              <Select
                 value={selectedAssociateId}
-                onChange={(e) => setSelectedAssociateId(e.target.value)}
-                className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
+                onValueChange={setSelectedAssociateId}
               >
-                <option value="all">All Associates</option>
-                {uniqueAssociates.map((assoc) => (
-                  <option key={assoc.id} value={assoc.id}>
-                    {assoc.fullName}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="rounded-lg h-8 text-xs">
+                  <SelectValue placeholder="All Associates" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Associates</SelectItem>
+                  {uniqueAssociates.map((assoc) => (
+                    <SelectItem key={assoc.id} value={assoc.id}>
+                      {assoc.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -756,19 +766,19 @@ export default function AttendancePage() {
             >
               Time Range
             </Label>
-            <select
-              id="filter-range"
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
-            >
-              <option value="all">All Time</option>
-              <option value="week">Past Week</option>
-              <option value="month">Past Month</option>
-              <option value="six-months">Past 6 Months</option>
-              <option value="year">Past Year</option>
-              <option value="custom">Custom Range</option>
-            </select>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="rounded-lg h-8 text-xs">
+                <SelectValue placeholder="All Time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="week">Past Week</SelectItem>
+                <SelectItem value="month">Past Month</SelectItem>
+                <SelectItem value="six-months">Past 6 Months</SelectItem>
+                <SelectItem value="year">Past Year</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Month Selector (Custom only) */}
@@ -780,26 +790,26 @@ export default function AttendancePage() {
               >
                 Month
               </Label>
-              <select
-                id="filter-month"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-                className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
-              >
-                <option value="all">All Months</option>
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-              </select>
+              <Select value={filterMonth} onValueChange={setFilterMonth}>
+                <SelectTrigger className="rounded-lg h-8 text-xs">
+                  <SelectValue placeholder="All Months" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Months</SelectItem>
+                  <SelectItem value="1">January</SelectItem>
+                  <SelectItem value="2">February</SelectItem>
+                  <SelectItem value="3">March</SelectItem>
+                  <SelectItem value="4">April</SelectItem>
+                  <SelectItem value="5">May</SelectItem>
+                  <SelectItem value="6">June</SelectItem>
+                  <SelectItem value="7">July</SelectItem>
+                  <SelectItem value="8">August</SelectItem>
+                  <SelectItem value="9">September</SelectItem>
+                  <SelectItem value="10">October</SelectItem>
+                  <SelectItem value="11">November</SelectItem>
+                  <SelectItem value="12">December</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -812,17 +822,17 @@ export default function AttendancePage() {
               >
                 Year
               </Label>
-              <select
-                id="filter-year"
-                value={filterYear}
-                onChange={(e) => setFilterYear(e.target.value)}
-                className="w-full h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
-              >
-                <option value="all">All Years</option>
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-              </select>
+              <Select value={filterYear} onValueChange={setFilterYear}>
+                <SelectTrigger className="rounded-lg h-8 text-xs">
+                  <SelectValue placeholder="All Years" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2024">2024</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -893,16 +903,20 @@ export default function AttendancePage() {
             <Label htmlFor="attendancePageSize" className="text-xs font-bold uppercase tracking-wider text-muted-foreground block text-right">
               Show
             </Label>
-            <select
-              id="attendancePageSize"
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="h-8 text-xs bg-card border border-border rounded-lg px-2 focus:ring-1 focus:ring-primary/40 focus:outline-hidden"
+            <Select
+              className="min-w-24"
+              value={String(pageSize)}
+              onValueChange={(v) => setPageSize(Number(v))}
             >
-              <option value={5}>5 / page</option>
-              <option value={10}>10 / page</option>
-              <option value={20}>20 / page</option>
-            </select>
+              <SelectTrigger className="rounded-lg h-8 text-xs">
+                <SelectValue placeholder="5 / page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 / page</SelectItem>
+                <SelectItem value="10">10 / page</SelectItem>
+                <SelectItem value="20">20 / page</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

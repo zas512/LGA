@@ -14,6 +14,13 @@ import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 interface AssignAssociateDialogProps {
   matterId: string;
@@ -91,19 +98,21 @@ export function AssignAssociateDialog({
             >
               Legal Staff
             </Label>
-            <select
-              id="assocSelect"
+            <Select
               value={selectedAssociateId}
-              onChange={(e) => setSelectedAssociateId(e.target.value)}
-              className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
+              onValueChange={setSelectedAssociateId}
             >
-              <option value="">Select associate</option>
-              {unassignedAssociates.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name || a.email}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="rounded-xl h-8 font-semibold">
+                <SelectValue placeholder="Select associate" />
+              </SelectTrigger>
+              <SelectContent>
+                {unassignedAssociates.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name || a.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1">
@@ -113,17 +122,19 @@ export function AssignAssociateDialog({
             >
               Case Role Label
             </Label>
-            <select
-              id="roleInput"
-              value={associateRole}
-              onChange={(e) => setAssociateRole(e.target.value)}
-              className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-            >
-              <option value="Lead Counsel">Lead Counsel</option>
-              <option value="Associate">Associate Counsel</option>
-              <option value="Co-Counsel">Co-Counsel</option>
-              <option value="Legal Assistant">Legal Assistant</option>
-            </select>
+            <Select value={associateRole} onValueChange={setAssociateRole}>
+              <SelectTrigger className="rounded-xl h-8 font-semibold">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Lead Counsel">Lead Counsel</SelectItem>
+                <SelectItem value="Associate">Associate Counsel</SelectItem>
+                <SelectItem value="Co-Counsel">Co-Counsel</SelectItem>
+                <SelectItem value="Legal Assistant">
+                  Legal Assistant
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

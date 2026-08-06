@@ -10,6 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/utils";
 import { type SubmitEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -180,19 +187,22 @@ const EditDialog = ({
             <Label htmlFor="editStatus" className="text-xs font-bold">
               Status
             </Label>
-            <select
-              id="editStatus"
+            <Select
               value={editStatus}
-              onChange={(e) =>
-                setEditStatus(e.target.value as AttendanceRecord["status"])
+              onValueChange={(v) =>
+                setEditStatus(v as AttendanceRecord["status"])
               }
-              className="w-full h-9 rounded-xl border border-border bg-muted/40 text-xs text-foreground px-3 py-1 focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
             >
-              <option value="PRESENT">Present (Full Day)</option>
-              <option value="HALF_DAY">Half Day</option>
-              <option value="ABSENT">Absent</option>
-              <option value="LEAVE">On Leave</option>
-            </select>
+              <SelectTrigger className="rounded-xl h-9 bg-muted/40 text-xs font-semibold">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PRESENT">Present (Full Day)</SelectItem>
+                <SelectItem value="HALF_DAY">Half Day</SelectItem>
+                <SelectItem value="ABSENT">Absent</SelectItem>
+                <SelectItem value="LEAVE">On Leave</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">

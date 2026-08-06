@@ -14,6 +14,13 @@ import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 interface ChangeStageDialogProps {
   matterId: string;
@@ -96,19 +103,18 @@ export function ChangeStageDialog({
             >
               Choose Legal Stage
             </Label>
-            <select
-              id="stageSelect"
-              value={selectedStageId}
-              onChange={(e) => setSelectedStageId(e.target.value)}
-              className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-            >
-              <option value="">Select Stage</option>
-              {filteredStages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  Stage {s.sequenceOrder}: {s.name}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedStageId} onValueChange={setSelectedStageId}>
+              <SelectTrigger className="rounded-xl h-8 font-semibold">
+                <SelectValue placeholder="Select Stage" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredStages.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    Stage {s.sequenceOrder}: {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

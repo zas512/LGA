@@ -9,6 +9,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -21,7 +28,7 @@ import {
   XCircle
 } from "lucide-react";
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -118,9 +125,6 @@ function dayCount(start: string, end: string): number {
   return Math.round((e - s) / 86_400_000) + 1;
 }
 
-const selectClass =
-  "w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary";
-
 export function LeaveRequests({
   userRole
 }: Readonly<{ userRole?: string }>) {
@@ -167,6 +171,7 @@ export function LeaveRequests({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<ApplyValues>({
     resolver: zodResolver(applySchema),
@@ -276,14 +281,24 @@ export function LeaveRequests({
                 <Label htmlFor="leaveTypeId" className="text-xs font-bold text-foreground">
                   Leave Type *
                 </Label>
-                <select id="leaveTypeId" {...register("leaveTypeId")} className={selectClass}>
-                  <option value="">Select leave type</option>
-                  {leaveTypes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.annualAllotment} days/year)
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  control={control}
+                  name="leaveTypeId"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="rounded-xl h-9 font-semibold">
+                        <SelectValue placeholder="Select leave type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leaveTypes.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name} ({t.annualAllotment} days/year)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.leaveTypeId && (
                   <p className="text-xs text-destructive font-semibold">
                     {errors.leaveTypeId.message}

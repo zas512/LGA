@@ -13,6 +13,13 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 interface ChangeStatusDialogProps {
   matterId: string;
@@ -73,17 +80,17 @@ export function ChangeStatusDialog({
             >
               Lifecycle Status
             </Label>
-            <select
-              id="statusSelect"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-            >
-              <option value="ACTIVE">Active (In Trial)</option>
-              <option value="DECIDED">Decided (Decreed)</option>
-              <option value="CLOSED">Closed (Settled)</option>
-              <option value="ARCHIVED">Archived (Soft Delete)</option>
-            </select>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="rounded-xl h-8 font-semibold">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ACTIVE">Active (In Trial)</SelectItem>
+                <SelectItem value="DECIDED">Decided (Decreed)</SelectItem>
+                <SelectItem value="CLOSED">Closed (Settled)</SelectItem>
+                <SelectItem value="ARCHIVED">Archived (Soft Delete)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

@@ -10,10 +10,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import { EXPENSE_CATEGORIES } from "./CreateExpenseDialog";
@@ -48,6 +55,7 @@ export function RecurringTemplatesDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<RecurringTemplateValues>({
     resolver: zodResolver(recurringTemplateSchema),
@@ -117,18 +125,24 @@ export function RecurringTemplatesDialog({
               >
                 Category *
               </Label>
-              <select
-                id="templateCategory"
-                {...register("category")}
-                className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="">Select a category</option>
-                {EXPENSE_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="category"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-9 font-semibold">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPENSE_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.category && (
                 <p className="text-xs text-destructive font-semibold">
                   {errors.category.message}
@@ -143,15 +157,22 @@ export function RecurringTemplatesDialog({
               >
                 Billing Cycle *
               </Label>
-              <select
-                id="templateBillingCycle"
-                {...register("billingCycle")}
-                className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="MONTHLY">Monthly</option>
-                <option value="QUARTERLY">Quarterly</option>
-                <option value="ANNUALLY">Annually</option>
-              </select>
+              <Controller
+                control={control}
+                name="billingCycle"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-9 font-semibold">
+                      <SelectValue placeholder="Select billing cycle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MONTHLY">Monthly</SelectItem>
+                      <SelectItem value="QUARTERLY">Quarterly</SelectItem>
+                      <SelectItem value="ANNUALLY">Annually</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 

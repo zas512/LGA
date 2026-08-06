@@ -11,10 +11,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -48,6 +55,7 @@ export function CreateClientDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<CreateClientValues>({
     resolver: zodResolver(createClientSchema),
@@ -96,9 +104,6 @@ export function CreateClientDialog({
     createMutation.mutate(values);
   };
 
-  const selectClasses =
-    "w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl bg-card border-border rounded-2xl shadow-xl max-h-[85vh] overflow-y-auto">
@@ -141,11 +146,22 @@ export function CreateClientDialog({
               >
                 Client Type
               </Label>
-              <select id="clientType" {...register("clientType")} className={selectClasses}>
-                <option value="INDIVIDUAL">Individual</option>
-                <option value="COMPANY">Company</option>
-                <option value="GOVERNMENT">Government</option>
-              </select>
+              <Controller
+                control={control}
+                name="clientType"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select client type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INDIVIDUAL">Individual</SelectItem>
+                      <SelectItem value="COMPANY">Company</SelectItem>
+                      <SelectItem value="GOVERNMENT">Government</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
@@ -242,10 +258,21 @@ export function CreateClientDialog({
               >
                 Status
               </Label>
-              <select id="status" {...register("status")} className={selectClasses}>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 

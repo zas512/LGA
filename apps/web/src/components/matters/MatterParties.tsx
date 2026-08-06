@@ -12,13 +12,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { CustomTable } from "@/components/ui/table";
 import type { ColumnConfig } from "@/types/tableTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Mail, Phone, Plus, Users } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -119,6 +126,7 @@ export function MatterParties({
     setValue,
     watch,
     reset,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<AddPartyValues>({
     resolver: zodResolver(addPartySchema),
@@ -328,22 +336,43 @@ export function MatterParties({
               >
                 Case Association Role *
               </Label>
-              <select
-                id="partyRole"
-                {...register("partyRole")}
-                className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="PLAINTIFF">Plaintiff (Civil)</option>
-                <option value="DEFENDANT">Defendant (Civil)</option>
-                <option value="PETITIONER">Petitioner (Writ)</option>
-                <option value="RESPONDENT">Respondent (Writ)</option>
-                <option value="ACCUSED">Accused (Criminal)</option>
-                <option value="COMPLAINANT">Complainant (Criminal)</option>
-                <option value="OPPOSING_COUNSEL">Opposing Counsel</option>
-                <option value="CO_COUNSEL">Co-Counsel</option>
-                <option value="WITNESS">Witness</option>
-                <option value="COURT_CLERK">Court Clerk</option>
-              </select>
+              <Controller
+                control={control}
+                name="partyRole"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PLAINTIFF">
+                        Plaintiff (Civil)
+                      </SelectItem>
+                      <SelectItem value="DEFENDANT">
+                        Defendant (Civil)
+                      </SelectItem>
+                      <SelectItem value="PETITIONER">
+                        Petitioner (Writ)
+                      </SelectItem>
+                      <SelectItem value="RESPONDENT">
+                        Respondent (Writ)
+                      </SelectItem>
+                      <SelectItem value="ACCUSED">
+                        Accused (Criminal)
+                      </SelectItem>
+                      <SelectItem value="COMPLAINANT">
+                        Complainant (Criminal)
+                      </SelectItem>
+                      <SelectItem value="OPPOSING_COUNSEL">
+                        Opposing Counsel
+                      </SelectItem>
+                      <SelectItem value="CO_COUNSEL">Co-Counsel</SelectItem>
+                      <SelectItem value="WITNESS">Witness</SelectItem>
+                      <SelectItem value="COURT_CLERK">Court Clerk</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Select existing or create inline */}
@@ -397,18 +426,28 @@ export function MatterParties({
                     <span>Fetching contacts roster...</span>
                   </div>
                 ) : (
-                  <select
-                    id="partyId"
-                    {...register("partyId")}
-                    className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-                  >
-                    <option value="">Choose contact</option>
-                    {contacts.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.email || c.phone || "No contact info"})
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    control={control}
+                    name="partyId"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="rounded-xl h-8 font-semibold">
+                          <SelectValue placeholder="Choose contact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contacts.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name} (
+                              {c.email || c.phone || "No contact info"})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 )}
               </div>
             )}

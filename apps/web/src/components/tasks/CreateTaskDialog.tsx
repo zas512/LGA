@@ -10,12 +10,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Scale } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import {
@@ -127,6 +134,7 @@ export function CreateTaskDialog({
     reset,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<CreateTaskValues>({
     resolver: zodResolver(createTaskSchema),
@@ -215,9 +223,6 @@ export function CreateTaskDialog({
 
   const onSubmit = (values: CreateTaskValues) => createMutation.mutate(values);
 
-  const selectClass =
-    "w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl bg-card border-border rounded-2xl shadow-xl max-h-[88vh] overflow-y-auto">
@@ -296,19 +301,26 @@ export function CreateTaskDialog({
                 </p>
               ) : (
                 <>
-                  <select
-                    id="taskMatter"
+                  <Select
                     value={selectedMatterId}
-                    onChange={(e) => setSelectedMatterId(e.target.value)}
-                    className={cn(selectClass, matterError && "border-destructive")}
+                    onValueChange={setSelectedMatterId}
                   >
-                    <option value="">Select a matter</option>
-                    {allMatters.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.firmCaseNumber} — {m.clientName}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      className={cn(
+                        "rounded-xl h-9 font-semibold",
+                        matterError && "border-destructive"
+                      )}
+                    >
+                      <SelectValue placeholder="Select a matter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allMatters.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.firmCaseNumber} — {m.clientName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {matterError && (
                     <p className="text-xs text-destructive font-semibold">
                       {matterError}
@@ -419,13 +431,26 @@ export function CreateTaskDialog({
               >
                 Task Type
               </Label>
-              <select id="taskType" {...register("taskType")} className={selectClass}>
-                {(Object.keys(TASK_TYPE_LABEL) as TaskType[]).map((t) => (
-                  <option key={t} value={t}>
-                    {TASK_TYPE_LABEL[t]}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="taskType"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-9 font-semibold">
+                      <SelectValue placeholder="Select task type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(TASK_TYPE_LABEL) as TaskType[]).map(
+                        (t) => (
+                          <SelectItem key={t} value={t}>
+                            {TASK_TYPE_LABEL[t]}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1">
               <Label
@@ -434,12 +459,23 @@ export function CreateTaskDialog({
               >
                 Priority
               </Label>
-              <select id="taskPriority" {...register("priority")} className={selectClass}>
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="CRITICAL">Critical</option>
-              </select>
+              <Controller
+                control={control}
+                name="priority"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-9 font-semibold">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">Low</SelectItem>
+                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                      <SelectItem value="HIGH">High</SelectItem>
+                      <SelectItem value="CRITICAL">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 

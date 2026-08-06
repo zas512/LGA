@@ -2,12 +2,19 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -125,6 +132,7 @@ export function MatterDocuments({
     register: registerCreate,
     handleSubmit: handleSubmitCreate,
     reset: resetCreate,
+    control: controlCreate,
     formState: { errors: errorsCreate, isSubmitting: isSubmittingCreate }
   } = useForm<CreateDocumentValues>({
     resolver: zodResolver(createDocumentSchema),
@@ -471,18 +479,35 @@ export function MatterDocuments({
               >
                 Document Category *
               </Label>
-              <select
-                id="category"
-                {...registerCreate("category")}
-                className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="PLEADING">Pleading / Plaint</option>
-                <option value="EVIDENCE">Evidence Scan</option>
-                <option value="ORDER_SHEET">Court Order Sheet</option>
-                <option value="AFFIDAVIT">Affidavit / Statement</option>
-                <option value="CONTRACT">Contract / Agreement</option>
-                <option value="OTHER">Other / Miscellaneous</option>
-              </select>
+              <Controller
+                control={controlCreate}
+                name="category"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PLEADING">
+                        Pleading / Plaint
+                      </SelectItem>
+                      <SelectItem value="EVIDENCE">Evidence Scan</SelectItem>
+                      <SelectItem value="ORDER_SHEET">
+                        Court Order Sheet
+                      </SelectItem>
+                      <SelectItem value="AFFIDAVIT">
+                        Affidavit / Statement
+                      </SelectItem>
+                      <SelectItem value="CONTRACT">
+                        Contract / Agreement
+                      </SelectItem>
+                      <SelectItem value="OTHER">
+                        Other / Miscellaneous
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* File URL */}

@@ -1,6 +1,13 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { CustomTable } from "@/components/ui/table";
 import type { ColumnConfig } from "@/types/tableTypes";
 import type { Lead } from "@/types/clientTypes";
@@ -61,19 +68,20 @@ export function LeadsTable({
       accessor: (l) => l.status,
       render: (l) =>
         canManage ? (
-          <select
-            aria-label={`Change status for ${l.name}`}
-            value={l.status}
-            onChange={(e) => onStatusChange(l, e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full text-xs h-7 px-2 rounded-lg border border-border bg-card text-foreground font-bold outline-none focus:border-primary cursor-pointer"
-          >
-            <option value="NEW">New</option>
-            <option value="CONTACTED">Contacted</option>
-            <option value="QUALIFIED">Qualified</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
+          <span onClick={(e) => e.stopPropagation()}>
+            <Select value={l.status} onValueChange={(v) => onStatusChange(l, v)}>
+              <SelectTrigger className="h-7 rounded-lg text-xs font-bold">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NEW">New</SelectItem>
+                <SelectItem value="CONTACTED">Contacted</SelectItem>
+                <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                <SelectItem value="REJECTED">Rejected</SelectItem>
+                <SelectItem value="ARCHIVED">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </span>
         ) : (
           <Badge
             variant={STATUS_VARIANT[l.status]}

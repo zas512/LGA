@@ -11,10 +11,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -46,9 +53,6 @@ interface CreateLeadDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const selectClasses =
-  "w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary";
-
 export function CreateLeadDialog({
   open,
   onOpenChange
@@ -69,6 +73,7 @@ export function CreateLeadDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<CreateLeadValues>({
     resolver: zodResolver(createLeadSchema),
@@ -197,30 +202,55 @@ export function CreateLeadDialog({
               <Label htmlFor="practiceArea" className="text-xs font-bold text-foreground">
                 Practice Area
               </Label>
-              <select id="practiceArea" {...register("practiceArea")} className={selectClasses}>
-                <option value="">Not selected</option>
-                <option value="CIVIL">Civil (CPC)</option>
-                <option value="CRIMINAL">Criminal (CrPC)</option>
-                <option value="WRIT">Writ Petition</option>
-                <option value="FAMILY">Family Law</option>
-                <option value="SERVICE">Service Matters</option>
-                <option value="CORPORATE">Corporate Law</option>
-                <option value="TAXATION">Taxation Law</option>
-              </select>
+              <Controller
+                control={control}
+                name="practiceArea"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Not selected" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Not selected</SelectItem>
+                      <SelectItem value="CIVIL">Civil (CPC)</SelectItem>
+                      <SelectItem value="CRIMINAL">Criminal (CrPC)</SelectItem>
+                      <SelectItem value="WRIT">Writ Petition</SelectItem>
+                      <SelectItem value="FAMILY">Family Law</SelectItem>
+                      <SelectItem value="SERVICE">Service Matters</SelectItem>
+                      <SelectItem value="CORPORATE">Corporate Law</SelectItem>
+                      <SelectItem value="TAXATION">Taxation Law</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div className="space-y-1">
               <Label htmlFor="source" className="text-xs font-bold text-foreground">
                 Lead Source
               </Label>
-              <select id="source" {...register("source")} className={selectClasses}>
-                <option value="REFERRAL">Referral</option>
-                <option value="WEBSITE">Website</option>
-                <option value="WALK_IN">Walk-in</option>
-                <option value="SOCIAL">Social Media</option>
-                <option value="PHONE">Phone</option>
-                <option value="OTHER">Other</option>
-              </select>
+              <Controller
+                control={control}
+                name="source"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="REFERRAL">Referral</SelectItem>
+                      <SelectItem value="WEBSITE">Website</SelectItem>
+                      <SelectItem value="WALK_IN">Walk-in</SelectItem>
+                      <SelectItem value="SOCIAL">Social Media</SelectItem>
+                      <SelectItem value="PHONE">Phone</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
@@ -229,27 +259,52 @@ export function CreateLeadDialog({
               <Label htmlFor="status" className="text-xs font-bold text-foreground">
                 Status
               </Label>
-              <select id="status" {...register("status")} className={selectClasses}>
-                <option value="NEW">New</option>
-                <option value="CONTACTED">Contacted</option>
-                <option value="QUALIFIED">Qualified</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="ARCHIVED">Archived</option>
-              </select>
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NEW">New</SelectItem>
+                      <SelectItem value="CONTACTED">Contacted</SelectItem>
+                      <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                      <SelectItem value="REJECTED">Rejected</SelectItem>
+                      <SelectItem value="ARCHIVED">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div className="space-y-1">
               <Label htmlFor="assignedToId" className="text-xs font-bold text-foreground">
                 Assign To
               </Label>
-              <select id="assignedToId" {...register("assignedToId")} className={selectClasses}>
-                <option value="">Unassigned</option>
-                {allAssociates.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name || a.email}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="assignedToId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="rounded-xl h-8 font-semibold">
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {allAssociates.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name || a.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 

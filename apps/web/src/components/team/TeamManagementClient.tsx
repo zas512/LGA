@@ -10,12 +10,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { CustomTable } from "@/components/ui/table";
 import type { ColumnConfig } from "@/types/tableTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Shield, UserPlus, Users } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -73,6 +80,7 @@ export function TeamManagementClient() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors }
   } = useForm<CreateMemberValues>({
     resolver: zodResolver(createMemberSchema),
@@ -218,15 +226,29 @@ export function TeamManagementClient() {
               <Label htmlFor="role" className="text-xs font-semibold">
                 Assigned Role
               </Label>
-              <select
-                id="role"
-                {...register("role")}
-                disabled={createMutation.isPending}
-                className="w-full h-10 rounded-xl border border-input bg-card text-foreground px-3 py-1 text-xs shadow-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="ASSOCIATE">ASSOCIATE (Legal Associate)</option>
-                <option value="ADMIN">ADMIN (Operational Assistant)</option>
-              </select>
+              <Controller
+                control={control}
+                name="role"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={createMutation.isPending}
+                  >
+                    <SelectTrigger className="rounded-xl h-10 text-xs shadow-xs">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ASSOCIATE">
+                        ASSOCIATE (Legal Associate)
+                      </SelectItem>
+                      <SelectItem value="ADMIN">
+                        ADMIN (Operational Assistant)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.role && (
                 <p className="text-xs text-destructive font-semibold">
                   {errors.role.message}

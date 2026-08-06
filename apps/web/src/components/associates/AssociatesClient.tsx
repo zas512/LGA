@@ -18,6 +18,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { CustomTable } from "@/components/ui/table";
 import type { ColumnConfig } from "@/types/tableTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +42,7 @@ import {
   Users
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -144,6 +151,7 @@ export function AssociatesClient({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors }
   } = useForm<CreateMemberValues>({
     resolver: zodResolver(createMemberSchema),
@@ -507,14 +515,25 @@ export function AssociatesClient({
               >
                 Assigned Role <span className="text-destructive">*</span>
               </Label>
-              <select
-                id="role"
-                {...register("role")}
-                className="w-full h-9 rounded-xl border border-input bg-card text-foreground px-3 py-1 text-xs shadow-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="ASSOCIATE">ASSOCIATE (Legal Counsel)</option>
-                <option value="ADMIN">ADMIN (Operations Assistant)</option>
-              </select>
+              <Controller
+                control={control}
+                name="role"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-9 text-xs shadow-xs">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ASSOCIATE">
+                        ASSOCIATE (Legal Counsel)
+                      </SelectItem>
+                      <SelectItem value="ADMIN">
+                        ADMIN (Operations Assistant)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.role && (
                 <p className="text-xs text-destructive font-semibold">
                   {errors.role.message}

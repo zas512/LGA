@@ -10,11 +10,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -102,6 +109,7 @@ export function CreateExpenseDialog({
     reset,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<CreateExpenseValues>({
     resolver: zodResolver(createExpenseSchema),
@@ -222,18 +230,24 @@ export function CreateExpenseDialog({
               >
                 Category *
               </Label>
-              <select
-                id="expenseCategory"
-                {...register("category")}
-                className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="">Select a category</option>
-                {EXPENSE_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="category"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="rounded-xl h-9 font-semibold">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPENSE_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.category && (
                 <p className="text-xs text-destructive font-semibold">
                   {errors.category.message}
@@ -315,18 +329,28 @@ export function CreateExpenseDialog({
               >
                 Payment Method
               </Label>
-              <select
-                id="expensePaymentMethod"
-                {...register("paymentMethod")}
-                className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-              >
-                <option value="">Not specified</option>
-                {PAYMENT_METHODS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="rounded-xl h-9 font-semibold">
+                      <SelectValue placeholder="Not specified" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Not specified</SelectItem>
+                      {PAYMENT_METHODS.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
@@ -377,18 +401,28 @@ export function CreateExpenseDialog({
             >
               Associate
             </Label>
-            <select
-              id="expenseAssociate"
-              {...register("associateId")}
-              className="w-full text-sm h-9 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
-            >
-              <option value="">Unassigned</option>
-              {allAssociates.map((assoc) => (
-                <option key={assoc.id} value={assoc.id}>
-                  {assoc.name || assoc.email}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="associateId"
+              render={({ field }) => (
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="rounded-xl h-9 font-semibold">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Unassigned</SelectItem>
+                    {allAssociates.map((assoc) => (
+                      <SelectItem key={assoc.id} value={assoc.id}>
+                        {assoc.name || assoc.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {allAssociates.length === 0 && (
               <p className="text-[11px] text-muted-foreground font-medium">
                 No associates in the firm roster to link.
