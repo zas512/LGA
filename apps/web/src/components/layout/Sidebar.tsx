@@ -1,4 +1,6 @@
 "use client";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { FirmLogo } from "@/components/branding/FirmLogo";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 import { cn } from "@/lib/utils";
 import { RootState } from "@/redux/store";
@@ -19,7 +21,6 @@ import {
   X
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -31,6 +32,13 @@ interface SidebarProps {
     role: string;
     firmId: string | null;
     name?: string | null;
+    avatarUrl?: string | null;
+    firm?: {
+      name?: string | null;
+      logoUrl?: string | null;
+      accentColor?: string | null;
+      tagline?: string | null;
+    } | null;
   };
 }
 
@@ -41,10 +49,27 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
   const pathname = usePathname();
   const dispatch = useDispatch();
   const mobileOpen = useSelector((state: RootState) => state.ui.sidebarOpen);
+  const { user: authUser } = useAuth();
+
+  // Prefer the getMe-rich user from AuthProvider (carries firm branding +
+  // avatarUrl); the server `user` prop only has JWT claims until hydration.
+  const richUser = authUser ?? user;
+  const firm = richUser.firm ?? null;
+  const avatarUrl = richUser.avatarUrl ?? null;
 
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // Expose the firm's accent color so branding surfaces can tint with it.
+  useEffect(() => {
+    if (firm?.accentColor) {
+      document.documentElement.style.setProperty(
+        "--brand-accent",
+        firm.accentColor
+      );
+    }
+  }, [firm?.accentColor]);
 
   // The collapse (icon-only) behavior is desktop-only. On mobile the drawer
   // always shows the full sidebar.
@@ -156,14 +181,6 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
   const filteredNav = navItems.filter((item) => item.roles.includes(user.role));
 
   const displayName = user.name || user.email;
-  const getInitials = (nameStr: string) => {
-    const parts = nameStr.trim().split(/\s+/);
-    if (parts.length >= 2 && parts[0] && parts[1]) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return nameStr.substring(0, 2).toUpperCase();
-  };
-  const userInitials = getInitials(displayName);
 
   return (
     <>
@@ -232,30 +249,31 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
             )}
           >
             {collapsed ? (
-              <Image
-                src="/laal_icon.png"
-                alt="LGA"
-                width={30}
-                height={30}
-                className="object-contain"
+              <FirmLogo
+                logoUrl={firm?.logoUrl}
+                name={firm?.name ?? "LGA"}
+                accentColor={firm?.accentColor}
+                size={30}
               />
             ) : (
               <>
-                <div className="flex items-center gap-3">
-                  <Image
-                    src="/lgt_black.png"
-                    alt="Laal Global Advisory"
-                    width={300}
-                    height={100}
-                    className="object-contain dark:hidden"
+                <div className="flex min-w-0 items-center gap-3">
+                  <FirmLogo
+                    logoUrl={firm?.logoUrl}
+                    name={firm?.name ?? "LGA"}
+                    accentColor={firm?.accentColor}
+                    size={40}
                   />
-                  <Image
-                    src="/lgt_white.png"
-                    alt="Laal Global Advisory"
-                    width={300}
-                    height={100}
-                    className="object-contain hidden dark:block"
-                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-black tracking-tight text-sidebar-foreground">
+                      {firm?.name ?? "Laal Global Advisory"}
+                    </p>
+                    {firm?.tagline && (
+                      <p className="truncate text-[10px] font-semibold text-muted-foreground">
+                        {firm.tagline}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 {/* Mobile-only close button */}
                 <button
@@ -362,10 +380,11 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
         {/* Bottom Section */}
         <div className="pt-4 border-t border-sidebar-border relative">
           <ProfileDropdown
-            user={user}
+            user={richUser}
             collapsed={collapsed}
-            userInitials={userInitials}
             displayName={displayName}
+            avatarUrl={avatarUrl}
+            firm={firm}
           />
         </div>
       </aside>

@@ -65,12 +65,12 @@ export function AuthProvider({
           );
           setUser(activeUser);
 
-          // If on login page while authenticated, route to appropriate page
-          if (pathname === "/login") {
+          // If on login/register page while authenticated, route to appropriate page
+          if (pathname === "/login" || pathname === "/register") {
             const targetPath =
               activeUser.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
             console.log(
-              `[AuthProvider] 🔀 Authenticated user on login page. Routing to ${targetPath}`
+              `[AuthProvider] 🔀 Authenticated user on ${pathname}. Routing to ${targetPath}`
             );
             router.replace(targetPath);
           } else if (

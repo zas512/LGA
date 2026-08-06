@@ -1,5 +1,22 @@
-import { Expose } from "class-transformer";
+import { Expose, Type } from "class-transformer";
 import type { UserRole } from "../../../generated/prisma/client";
+
+export class FirmBrandEntity {
+  @Expose()
+  id: string;
+
+  @Expose()
+  name: string;
+
+  @Expose()
+  logoUrl: string | null;
+
+  @Expose()
+  accentColor: string | null;
+
+  @Expose()
+  tagline: string | null;
+}
 
 export class AuthUserEntity {
   @Expose()
@@ -16,6 +33,13 @@ export class AuthUserEntity {
 
   @Expose()
   firmId: string | null;
+
+  @Expose()
+  avatarUrl: string | null;
+
+  @Expose()
+  @Type(() => FirmBrandEntity)
+  firm: FirmBrandEntity | null;
 
   @Expose()
   activeCheckInTime: Date | null;

@@ -594,6 +594,34 @@ async function main() {
     });
   }
 
+  // 10. Seed demo invites (invite-only registration)
+  const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  await prisma.firmInvite.upsert({
+    where: { token: "demo-founder-token" },
+    update: {},
+    create: {
+      email: "newfounder@example.com",
+      token: "demo-founder-token",
+      role: "OWNER",
+      firmId: null,
+      invitedById: hammadUser.id,
+      expiresAt: new Date(Date.now() + INVITE_TTL_MS)
+    }
+  });
+
+  await prisma.firmInvite.upsert({
+    where: { token: "demo-member-token" },
+    update: {},
+    create: {
+      email: "newmember@laalglobal.com",
+      token: "demo-member-token",
+      role: "ASSOCIATE",
+      firmId: firm.id,
+      invitedById: adminUser.id,
+      expiresAt: new Date(Date.now() + INVITE_TTL_MS)
+    }
+  });
+
   console.log("Seed complete:");
   console.log(`  Firm: ${firm.name} (${firm.id})`);
   console.log("  zain@lga.dev / 12345678 (SUPER_ADMIN)");
@@ -603,6 +631,7 @@ async function main() {
   console.log("  Cases Seeded: LGA-2026-CV-01, LGA-2026-CR-02");
   console.log("  Clients Seeded: M/S Pakistan Trade House, Muhammad Kamran, Zahid & Co.");
   console.log("  Lead Seeded: Sara Malik (QUALIFIED)");
+  console.log("  Invites Seeded: demo-founder-token, demo-member-token");
 }
 
 main()

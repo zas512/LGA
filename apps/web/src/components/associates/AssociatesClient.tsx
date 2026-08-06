@@ -1,4 +1,5 @@
 "use client";
+import { InviteMemberDialog } from "@/components/team/InviteMemberDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,6 +92,7 @@ export function AssociatesClient({
   const queryClient = useQueryClient();
   const [globalFilter, setGlobalFilter] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<FirmMember | null>(null);
 
   const canManage = userRole === "OWNER";
@@ -378,13 +380,23 @@ export function AssociatesClient({
             </Button>
 
             {canManage && (
-              <Button
-                onClick={() => setIsCreateOpen(true)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold gap-1.5 h-9 px-4 shadow-xs"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span>Create Associate</span>
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsInviteOpen(true)}
+                  className="rounded-xl text-xs font-semibold border-border gap-1.5 h-9 px-4"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>Invite Member</span>
+                </Button>
+                <Button
+                  onClick={() => setIsCreateOpen(true)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold gap-1.5 h-9 px-4 shadow-xs"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Create Associate</span>
+                </Button>
+              </>
             )}
           </div>
         </CardContent>
@@ -683,6 +695,11 @@ export function AssociatesClient({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ========================================================= */}
+      {/* INVITE MEMBER DIALOG (EMAIL LINK / RESEND) */}
+      {/* ========================================================= */}
+      <InviteMemberDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} />
     </div>
   );
 }

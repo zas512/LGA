@@ -109,7 +109,7 @@ export async function proxy(request: NextRequest) {
   }
   if (hasToken) {
     const user = accessToken ? decodeJwt(accessToken) : null;
-    if (pathname === "/login") {
+    if (pathname === "/login" || pathname === "/register") {
       return redirectRoleAwareFromLogin(request, user);
     }
     const areaRedirect = redirectIfWrongArea(request, pathname, user);
@@ -130,6 +130,7 @@ export const config = {
     "/intake/:path*",
     "/leave/:path*",
     "/platform/:path*",
-    "/login"
+    "/login",
+    "/register"
   ]
 };

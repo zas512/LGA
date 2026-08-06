@@ -1,44 +1,73 @@
 import { Transform } from "class-transformer";
 import {
   IsEmail,
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   MinLength
 } from "class-validator";
-import { UserRole } from "../../../generated/prisma/client";
+import { AuthProvider } from "../../../generated/prisma/client";
 
+const trim = ({ value }: { value: unknown }) =>
+  typeof value === "string" ? value.trim() : value;
+
+/**
+ * Registration is invite-only. `inviteToken` carries the role and firm; the
+ * caller never supplies `role`. Founder invites (role OWNER) additionally send
+ * firm-setup fields, which the service validates as required for that branch.
+ */
 export class RegisterDto {
   @IsEmail()
-  @Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" ? value.trim() : value
-  )
+  @Transform(trim)
   email!: string;
 
   @IsString()
-  @MinLength(8)
-  @MaxLength(72) // bcrypt silently truncates beyond 72 bytes
-  password!: string;
+  @IsNotEmpty({ message: "inviteToken is required" })
+  inviteToken!: string;
 
   /**
-   * Only OWNER is accepted; the enum is kept so an explicit role still yields a
-   * 400 rather than a confusing 403 from the service.
-   */
-  @IsEnum(UserRole)
-  role!: UserRole;
-
-  /**
-   * Required for the OWNER flow. `@IsOptional()` used to sit next to the
-   * `@ValidateIf` here, which cancelled it out and pushed the check into the
-   * service.
+   * Optional at the DTO level: Google-registered accounts have no password.
+   * The service requires it when authProvider is EMAIL.
    */
   @IsString()
-  @IsNotEmpty({ message: "firmName is required when registering a firm owner" })
-  firmName!: string;
+  @IsOptional()
+  @MinLength(8, { message: "Password must be at least 8 characters" })
+  @MaxLength(72) // bcrypt silently truncates beyond 72 bytes
+  password?: string;
+
+  @IsIn([AuthProvider.EMAIL, AuthProvider.GOOGLE])
+  @IsOptional()
+  authProvider?: AuthProvider;
 
   @IsString()
   @IsOptional()
   name?: string;
+
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  googleId?: string;
+
+  // Founder-only firm-setup fields (validated as required in the service).
+  @IsString()
+  @IsOptional()
+  @IsNotEmpty({ message: "firmName is required for a founder invite" })
+  firmName?: string;
+
+  @IsString()
+  @IsOptional()
+  logoUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  accentColor?: string;
+
+  @IsString()
+  @IsOptional()
+  tagline?: string;
 }

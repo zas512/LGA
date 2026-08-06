@@ -1,5 +1,6 @@
 "use client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { FirmLogo } from "@/components/branding/FirmLogo";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { cn, getErrorMessage } from "@/lib/utils";
@@ -168,6 +169,22 @@ export function Header({
       <div className="flex items-center gap-3 flex-wrap">
         {/* Global Search Bar — debounced navigation to /search?q=… */}
         <GlobalSearch />
+
+        {/* Firm branding chip (hidden for SUPER_ADMIN — they have no firm) */}
+        {user?.firm && (
+          <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 shadow-xs">
+            <FirmLogo
+              logoUrl={user.firm.logoUrl}
+              name={user.firm.name}
+              accentColor={user.firm.accentColor}
+              size={22}
+              rounded="rounded-md"
+            />
+            <span className="max-w-40 truncate text-xs font-bold text-foreground">
+              {user.firm.name}
+            </span>
+          </div>
+        )}
 
         {/* Dynamic Attendance Buttons (self check-in/out for firm owner & associates) */}
         {user && (user.role === "OWNER" || user.role === "ASSOCIATE") && (

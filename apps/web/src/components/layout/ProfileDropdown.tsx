@@ -1,5 +1,7 @@
 "use client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { UserAvatar } from "@/components/branding/UserAvatar";
+import { DEFAULT_ACCENT } from "@/components/branding/PlaceholderLogo";
 import { cn } from "@/lib/utils";
 import { HelpCircle, LogOut, Settings } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -14,15 +16,22 @@ interface ProfileDropdownProps {
     name?: string | null;
   };
   collapsed: boolean;
-  userInitials: string;
   displayName: string;
+  avatarUrl?: string | null;
+  firm?: {
+    name?: string | null;
+    logoUrl?: string | null;
+    accentColor?: string | null;
+    tagline?: string | null;
+  } | null;
 }
 
 export function ProfileDropdown({
   user,
   collapsed,
-  userInitials,
-  displayName
+  displayName,
+  avatarUrl,
+  firm
 }: Readonly<ProfileDropdownProps>) {
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -109,6 +118,17 @@ export function ProfileDropdown({
               <span className="inline-block text-xs font-bold text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/50 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 w-max">
                 {user.role === "OWNER" ? "Principal Counsel" : user.role}
               </span>
+              {firm?.name && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mt-1.5">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor: firm.accentColor ?? DEFAULT_ACCENT
+                    }}
+                  />
+                  <span className="truncate">{firm.name}</span>
+                </span>
+              )}
             </div>
 
             {/* Staggered Actions List */}
@@ -196,9 +216,22 @@ export function ProfileDropdown({
         )}
         title={collapsed ? displayName : undefined}
       >
-        <p className="h-8 w-8 rounded-full bg-primary/10 dark:bg-primary/50 text-primary dark:text-primary-foreground font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
-          {userInitials}
-        </p>
+        <div
+          className="shrink-0"
+          style={
+            firm?.accentColor
+              ? {
+                  boxShadow: `0 0 0 2px var(--brand-accent, ${firm.accentColor})`
+                }
+              : undefined
+          }
+        >
+          <UserAvatar
+            avatarUrl={avatarUrl}
+            name={displayName}
+            email={user.email}
+          />
+        </div>
         {!collapsed && (
           <div className="flex-1 min-w-0 transition-opacity duration-300">
             <p className="text-sm font-bold text-card-foreground truncate">

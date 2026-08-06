@@ -6,6 +6,14 @@ export interface User {
   role: "SUPER_ADMIN" | "OWNER" | "ADMIN" | "ASSOCIATE";
   firmId: string | null;
   name?: string | null;
+  avatarUrl?: string | null;
+  firm?: {
+    id: string;
+    name: string;
+    logoUrl?: string | null;
+    accentColor?: string | null;
+    tagline?: string | null;
+  } | null;
   activeCheckInTime?: string | null;
   isCheckedIn?: boolean;
 }
@@ -65,4 +73,107 @@ export async function checkAuth(): Promise<User | null> {
   } catch {
     return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Invite-only registration + Google OAuth helpers
+// ---------------------------------------------------------------------------
+
+export interface InviteInfo {
+  id: string;
+  email: string;
+  type: "FOUNDER" | "MEMBER";
+  role: "OWNER" | "ADMIN" | "ASSOCIATE";
+  status: "PENDING" | "ACCEPTED" | "EXPIRED" | "REVOKED";
+  expiresAt: string;
+  firmName: string | null;
+}
+
+export interface RegisterWithInvitePayload {
+  inviteToken: string;
+  email: string;
+  password?: string;
+  authProvider?: "EMAIL" | "GOOGLE";
+  name?: string;
+  avatarUrl?: string;
+  googleId?: string;
+  // Founder-only firm setup
+  firmName?: string;
+  logoUrl?: string;
+  accentColor?: string;
+  tagline?: string;
+}
+
+export interface InviteResult {
+  id: string;
+  email: string;
+  role: "OWNER" | "ADMIN" | "ASSOCIATE";
+  type: "FOUNDER" | "MEMBER";
+  inviteUrl: string;
+}
+
+export async function validateInvite(token: string): Promise<InviteInfo> {
+  const res = await fetch(
+    `/api/auth/invites/${encodeURIComponent(token)}`,
+    { cache: "no-store" }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || "This invite is invalid or expired");
+  }
+  return data as InviteInfo;
+}
+
+export async function registerWithInvite(
+  payload: RegisterWithInvitePayload
+): Promise<User> {
+  const res = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to create your account");
+  }
+  return data.user as User;
+}
+
+export async function getGoogleProfile(code: string): Promise<{
+  googleId: string;
+  email: string;
+  name: string | null;
+  picture: string | null;
+}> {
+  const res = await fetch(
+    `/api/auth/google/profile?code=${encodeURIComponent(code)}`,
+    { cache: "no-store" }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || "Could not load your Google profile");
+  }
+  return data;
+}
+
+export function googleAuthUrl(inviteToken?: string): string {
+  return inviteToken
+    ? `/api/auth/google?invite=${encodeURIComponent(inviteToken)}`
+    : "/api/auth/google";
+}
+
+export async function inviteMember(payload: {
+  email: string;
+  role?: "ADMIN" | "ASSOCIATE";
+}): Promise<InviteResult> {
+  const res = await fetch("/api/auth/invites", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to create invitation");
+  }
+  return data as InviteResult;
 }

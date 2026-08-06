@@ -70,6 +70,36 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   CLOUDINARY_API_SECRET?: string;
+
+  // Optional: Google OAuth (sign-in via Gmail). When any value is missing, the
+  // web client hides the "Continue with Google" button and /auth/google
+  // returns 503. The rest of auth (invites, manual registration) still works.
+  @IsString()
+  @IsOptional()
+  GOOGLE_CLIENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CLIENT_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CALLBACK_URL?: string;
+
+  // Optional: Resend outbound invite email. When the key is missing, invites
+  // are still created and the invite link is returned to the inviter.
+  @IsString()
+  @IsOptional()
+  RESEND_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  RESEND_FROM_EMAIL: string = "LGA <onboarding@lga.dev>";
+
+  // Public origin of the web app, used to build invite links in emails.
+  @IsString()
+  @IsOptional()
+  WEB_APP_URL: string = "http://localhost:3000";
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvironmentVariables {
