@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/SearchInput";
 import {
   Select,
   SelectContent,
@@ -10,14 +10,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Briefcase,
-  FolderClosed,
-  Gavel,
-  Plus,
-  Scale,
-  Search
-} from "lucide-react";
+import { Briefcase, FolderClosed, Gavel, Plus, Scale } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CreateMatterDialog } from "./CreateMatterDialog";
@@ -156,16 +149,12 @@ export function MattersList({ userRole }: Readonly<MattersListProps>) {
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-1 flex-wrap items-center gap-3">
           {/* Search Input */}
-          <div className="w-full max-w-xs sm:w-80 h-10 flex items-center px-3 rounded-xl border border-border bg-card transition-colors hover:border-primary/70 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
-            <Search className="size-5 text-muted-foreground" />
-            <Input
-              aria-label="Search matters"
-              placeholder="Search case #, client, CNR..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:outline-none"
-            />
-          </div>
+          <SearchInput
+            aria-label="Search matters"
+            placeholder="Search case #, client, CNR..."
+            value={globalFilter}
+            onChange={setGlobalFilter}
+          />
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger aria-label="Filter by status" className="w-48">

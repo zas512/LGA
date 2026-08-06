@@ -66,7 +66,7 @@ export function Header({
   };
 
   const checkIn = async () => {
-    if (isSubmitting) return; // prevents double-tap duplicate records
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       const localDate = new Date();
@@ -98,7 +98,6 @@ export function Header({
 
   const checkOut = async () => {
     if (isSubmitting) return;
-    // Two-step confirm: first tap arms, second tap (within 4s) commits.
     if (!confirmingCheckOut) {
       armCheckOut();
       return;
@@ -127,7 +126,6 @@ export function Header({
     }
   };
 
-  // Helper to format check-in time statically
   const formatTimeFriendly = (isoStr: string | null | undefined) => {
     if (!isoStr) return "";
     const d = new Date(isoStr);
@@ -152,14 +150,14 @@ export function Header({
         </button>
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
-          {!breadcrumbIsPath && parentLabel && (
-            <>
-              <span>{parentLabel}</span>
-              <span>/</span>
-            </>
-          )}
-          <span className="text-primary font-bold">{breadcrumb}</span>
-        </p>
+            {!breadcrumbIsPath && parentLabel && (
+              <>
+                <span>{parentLabel}</span>
+                <span>/</span>
+              </>
+            )}
+            <span className="text-primary font-bold">{breadcrumb}</span>
+          </p>
           <h1 className="text-3xl font-black tracking-tight text-foreground mt-0.5">
             {title}
           </h1>
@@ -181,6 +179,7 @@ export function Header({
                   <span>In: {formatTimeFriendly(activeCheckInTime)}</span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => checkOut()}
                   disabled={isSubmitting}
                   aria-live="polite"
@@ -208,6 +207,7 @@ export function Header({
               </div>
             ) : (
               <button
+                type="button"
                 onClick={() => checkIn()}
                 disabled={isSubmitting}
                 className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-success text-success-foreground hover:bg-success/90 font-bold text-xs shadow-xs transition-all duration-200 cursor-pointer disabled:pointer-events-none disabled:opacity-50"

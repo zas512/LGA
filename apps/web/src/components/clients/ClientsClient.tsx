@@ -1,8 +1,7 @@
 "use client";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/SearchInput";
 import {
   Select,
   SelectContent,
@@ -10,13 +9,12 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
 import type { Client } from "@/types/clientTypes";
+import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
   Contact,
   Plus,
-  Search,
   ShieldAlert,
   User,
   UserCheck
@@ -67,10 +65,8 @@ export function ClientsClient({ userRole }: Readonly<ClientsClientProps>) {
 
   const filteredClients = useMemo(() => {
     return allClients.filter((c) => {
-      const matchesStatus =
-        statusFilter === "ALL" || c.status === statusFilter;
-      const matchesType =
-        typeFilter === "ALL" || c.clientType === typeFilter;
+      const matchesStatus = statusFilter === "ALL" || c.status === statusFilter;
+      const matchesType = typeFilter === "ALL" || c.clientType === typeFilter;
 
       const searchStr =
         `${c.name} ${c.contactPerson ?? ""} ${c.phone ?? ""} ${c.email ?? ""} ${c.cnic ?? ""}`.toLowerCase();
@@ -163,16 +159,12 @@ export function ClientsClient({ userRole }: Readonly<ClientsClientProps>) {
       {/* 2. Action & Filter Bar */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-1 flex-wrap items-center gap-3">
-          <div className="w-full max-w-xs sm:w-80 h-10 flex items-center px-3 rounded-xl border border-border bg-card transition-colors hover:border-primary/70 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
-            <Search className="size-5 text-muted-foreground" />
-            <Input
-              aria-label="Search clients"
-              placeholder="Search name, CNIC, contact..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:outline-none"
-            />
-          </div>
+          <SearchInput
+            aria-label="Search clients"
+            placeholder="Search name, CNIC, contact..."
+            value={globalFilter}
+            onChange={setGlobalFilter}
+          />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger aria-label="Filter by status" className="w-44">
               <SelectValue placeholder="All Statuses" />
