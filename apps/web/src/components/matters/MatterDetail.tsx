@@ -185,7 +185,7 @@ export function MatterDetail({ id, userRole }: Readonly<MatterDetailProps>) {
                 )}
               </div>
               <h2 className="text-2xl font-black text-foreground pt-1">
-                {matter.clientName}{" "}
+                {matter.client?.name || matter.clientName}{" "}
                 <span className="text-muted-foreground font-normal">
                   v. Opposition
                 </span>

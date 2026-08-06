@@ -36,6 +36,7 @@ const createMatterSchema = z.object({
   presidingJudge: z.string().optional(),
   filingDate: z.string().optional(),
   clientName: z.string().min(2, { message: "Client name is required" }),
+  clientId: z.string().optional(),
   associateIds: z.array(z.string()).optional()
 });
 
@@ -53,6 +54,11 @@ interface CreateMatterDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
 export function CreateMatterDialog({
   open,
   onOpenChange
@@ -64,6 +70,17 @@ export function CreateMatterDialog({
     queryKey: ["associates"],
     queryFn: async () => {
       const res = await fetch("/api/associates");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: open
+  });
+
+  // Fetch Clients so a matter can be linked to a client record
+  const { data: allClients = [] } = useQuery<ClientOption[]>({
+    queryKey: ["clients"],
+    queryFn: async () => {
+      const res = await fetch("/api/clients");
       if (!res.ok) return [];
       return res.json();
     },
@@ -89,11 +106,13 @@ export function CreateMatterDialog({
       presidingJudge: "",
       filingDate: "",
       clientName: "",
+      clientId: "",
       associateIds: []
     }
   });
 
   const selectedAssociates = watch("associateIds") || [];
+  const selectedClientId = watch("clientId") || "";
 
   const createMutation = useMutation({
     mutationFn: async (values: CreateMatterValues) => {
@@ -102,6 +121,7 @@ export function CreateMatterDialog({
         filingDate: values.filingDate
           ? new Date(values.filingDate).toISOString()
           : undefined,
+        clientId: values.clientId || undefined,
         associateIds: values.associateIds?.length
           ? values.associateIds
           : undefined
@@ -132,6 +152,14 @@ export function CreateMatterDialog({
     createMutation.mutate(values);
   };
 
+  const handleClientSelect = (clientId: string) => {
+    setValue("clientId", clientId);
+    const client = allClients.find((c) => c.id === clientId);
+    if (client) {
+      setValue("clientName", client.name);
+    }
+  };
+
   const handleAssociateToggle = (associateId: string) => {
     const current = [...selectedAssociates];
     const index = current.indexOf(associateId);
@@ -157,6 +185,33 @@ export function CreateMatterDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+          {/* Link to a registered Client (optional) */}
+          <div className="space-y-1">
+            <Label
+              htmlFor="clientId"
+              className="text-xs font-bold text-foreground"
+            >
+              Link Client Record (optional)
+            </Label>
+            <select
+              id="clientId"
+              value={selectedClientId}
+              onChange={(e) => handleClientSelect(e.target.value)}
+              className="w-full text-sm h-8 px-3 rounded-xl border border-border bg-card text-foreground font-semibold outline-none focus:border-primary"
+            >
+              <option value="">— Standalone (no client record) —</option>
+              {allClients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Selecting a client pre-fills the display name below. Convert a
+              lead first to make it selectable here.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             {/* Client Name */}
             <div className="space-y-1">

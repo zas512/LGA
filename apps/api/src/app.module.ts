@@ -24,6 +24,7 @@ import { MattersModule } from "./modules/matters/matters.module";
 import { HearingsModule } from "./modules/matters/hearings/hearings.module";
 import { TasksModule } from "./modules/tasks/tasks.module";
 import { CaseDocumentsModule } from "./modules/case-documents/case-documents.module";
+import { ClientsModule } from "./modules/clients/clients.module";
 
 @Module({
   imports: [
@@ -49,7 +50,8 @@ import { CaseDocumentsModule } from "./modules/case-documents/case-documents.mod
     MattersModule,
     HearingsModule,
     TasksModule,
-    CaseDocumentsModule
+    CaseDocumentsModule,
+    ClientsModule
   ],
   controllers: [AppController],
   providers: [

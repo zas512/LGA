@@ -26,6 +26,8 @@ interface MatterOverviewProps {
     status: string;
     filingDate?: string | null;
     clientName: string;
+    clientId?: string | null;
+    client?: { id: string; name: string } | null;
     createdAt: string;
     updatedAt: string;
     currentStage?: {
@@ -88,7 +90,7 @@ export function MatterOverview({ matter }: Readonly<MatterOverviewProps>) {
                   Client Name
                 </p>
                 <p className="text-base font-bold text-foreground mt-0.5">
-                  {matter.clientName}
+                  {matter.client?.name || matter.clientName}
                 </p>
               </div>
             </div>

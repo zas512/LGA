@@ -26,6 +26,8 @@ export interface Matter {
   status: "ACTIVE" | "ARCHIVED" | "DECIDED" | "CLOSED";
   filingDate?: string | null;
   clientName: string;
+  clientId?: string | null;
+  client?: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
   currentStage?: {
@@ -79,7 +81,7 @@ export function MattersTable({ data, isLoading }: Readonly<MattersTableProps>) {
       accessor: (m) => m.clientName,
       render: (m) => (
         <span className="font-bold text-foreground text-sm">
-          {m.clientName}
+          {m.client?.name || m.clientName}
         </span>
       )
     },

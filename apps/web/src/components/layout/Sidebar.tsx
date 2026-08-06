@@ -9,7 +9,9 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Contact,
   CreditCard,
+  Inbox,
   LayoutDashboard,
   ListChecks,
   Scale,
@@ -99,6 +101,18 @@ export function Sidebar({ user }: Readonly<SidebarProps>) {
       title: "Matters & Cases",
       href: "/matters",
       icon: Scale,
+      roles: ["OWNER", "ASSOCIATE"]
+    },
+    {
+      title: "Clients",
+      href: "/clients",
+      icon: Contact,
+      roles: ["OWNER", "ASSOCIATE"]
+    },
+    {
+      title: "Intake",
+      href: "/intake",
+      icon: Inbox,
       roles: ["OWNER", "ASSOCIATE"]
     },
     {

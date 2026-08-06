@@ -34,6 +34,14 @@ export class MatterPartyEntity {
   partyRole!: string;
 }
 
+export class ClientSummaryEntity {
+  @Expose()
+  id!: string;
+
+  @Expose()
+  name!: string;
+}
+
 export class MatterEntity {
   @Expose()
   id!: string;
@@ -75,6 +83,9 @@ export class MatterEntity {
   clientName!: string;
 
   @Expose()
+  clientId?: string | null;
+
+  @Expose()
   createdAt!: Date;
 
   @Expose()
@@ -91,4 +102,8 @@ export class MatterEntity {
   @Expose()
   @Type(() => MatterPartyEntity)
   parties?: MatterPartyEntity[];
+
+  @Expose()
+  @Type(() => ClientSummaryEntity)
+  client?: ClientSummaryEntity | null;
 }

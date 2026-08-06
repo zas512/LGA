@@ -49,6 +49,10 @@ export class CreateMatterDto {
   @IsNotEmpty()
   clientName!: string;
 
+  @IsUUID()
+  @IsOptional()
+  clientId?: string;
+
   @IsArray()
   @IsUUID("all", { each: true })
   @IsOptional()

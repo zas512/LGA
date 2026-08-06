@@ -32,8 +32,15 @@ const MATTER_SELECT = {
   status: true,
   filingDate: true,
   clientName: true,
+  clientId: true,
   createdAt: true,
   updatedAt: true,
+  client: {
+    select: {
+      id: true,
+      name: true
+    }
+  },
   currentStage: {
     select: {
       id: true,
@@ -91,6 +98,10 @@ export class MattersService {
 
     const currentStageId = dto.currentStageId || startingStage?.id || null;
 
+    if (dto.clientId) {
+      await this.assertClientInFirm(firmId, dto.clientId);
+    }
+
     // 2. Create the matter in a transaction to handle associations cleanly
     const matter = await this.prisma.$transaction(async (tx) => {
       const created = await tx.matter.create({
@@ -106,7 +117,8 @@ export class MattersService {
           currentStageId,
           status: MatterStatus.ACTIVE,
           filingDate: dto.filingDate ? new Date(dto.filingDate) : null,
-          clientName: dto.clientName
+          clientName: dto.clientName,
+          clientId: dto.clientId ?? undefined
         },
         select: MATTER_SELECT
       });
@@ -197,6 +209,10 @@ export class MattersService {
       throw new NotFoundException("Matter not found");
     }
 
+    if (dto.clientId) {
+      await this.assertClientInFirm(firmId, dto.clientId);
+    }
+
     const data: Prisma.MatterUpdateInput = {
       firmCaseNumber: dto.firmCaseNumber,
       courtCaseNumber: dto.courtCaseNumber,
@@ -212,7 +228,13 @@ export class MattersService {
             : { disconnect: true }
           : undefined,
       filingDate: dto.filingDate ? new Date(dto.filingDate) : undefined,
-      clientName: dto.clientName
+      clientName: dto.clientName,
+      client:
+        dto.clientId !== undefined
+          ? dto.clientId
+            ? { connect: { id: dto.clientId } }
+            : { disconnect: true }
+          : undefined
     };
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -565,5 +587,16 @@ export class MattersService {
       where: { firmId },
       orderBy: { name: "asc" }
     });
+  }
+
+  /** Ensure a clientId references a client owned by this firm. */
+  private async assertClientInFirm(firmId: string, clientId: string) {
+    const client = await this.prisma.client.findFirst({
+      where: { id: clientId, firmId },
+      select: { id: true }
+    });
+    if (!client) {
+      throw new BadRequestException("Client does not belong to your firm");
+    }
   }
 }
