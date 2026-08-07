@@ -4,6 +4,7 @@ import {
   CreateFirmUserDialog,
   type FirmUser
 } from "@/components/platform/CreateFirmUserDialog";
+import { InviteFirmOwnerDialog } from "@/components/platform/InviteFirmOwnerDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,6 +72,7 @@ export function PlatformClient() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedFirm, setSelectedFirm] = useState<Firm | null>(null);
   const [createFirm, setCreateFirm] = useState<Firm | null>(null);
+  const [isInviteOwnerOpen, setIsInviteOwnerOpen] = useState(false);
 
   const {
     data: allFirms = [],
@@ -251,6 +253,14 @@ export function PlatformClient() {
               className="pl-9 bg-card text-xs rounded-xl h-9"
             />
           </div>
+          <Button
+            variant="outline"
+            onClick={() => setIsInviteOwnerOpen(true)}
+            className="h-9 px-4 text-xs font-bold flex items-center gap-1.5 rounded-xl shrink-0"
+          >
+            <Mail className="h-4 w-4" />
+            <span>Invite Owner</span>
+          </Button>
           <Button
             onClick={() => setIsCreateOpen(true)}
             className="h-9 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5 rounded-xl shrink-0"
@@ -554,6 +564,15 @@ export function PlatformClient() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* INVITE FIRM OWNER DIALOG (email → owner onboarding creates the firm) */}
+      <InviteFirmOwnerDialog
+        open={isInviteOwnerOpen}
+        onOpenChange={setIsInviteOwnerOpen}
+        onInvited={() => {
+          queryClient.invalidateQueries({ queryKey: ["firms"] });
+        }}
+      />
 
       {/* CREATE USER DIALOG (manual: name/email/role/initial password) */}
       <CreateFirmUserDialog

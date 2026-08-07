@@ -179,3 +179,17 @@ export async function inviteMember(payload: {
   }
   return data as InviteResult;
 }
+
+/** Founder invite (SUPER_ADMIN only): the recipient onboards to create their firm. */
+export async function inviteFounder(email: string): Promise<InviteResult> {
+  const res = await fetch("/api/auth/invites/founder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to create invitation");
+  }
+  return data as InviteResult;
+}
