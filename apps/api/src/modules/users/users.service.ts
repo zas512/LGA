@@ -10,9 +10,11 @@ import { toEntities, toEntity } from "../../common/serialization/serialize";
 import { BCRYPT_ROUNDS } from "../auth/auth.constants";
 import type { Prisma } from "../../generated/prisma/client";
 import { UserRole } from "../../generated/prisma/client";
+import { CreatePlatformUserDto } from "./dto/create-platform-user.dto";
 import {
   CreateFirmMemberDto,
-  UpdateFirmMemberDto
+  UpdateFirmMemberDto,
+  type PlatformRole
 } from "./dto/firm-member.dto";
 import { UserEntity } from "./entities/user.entity";
 
@@ -45,10 +47,31 @@ export class UsersService {
     firmId: string | null,
     dto: CreateFirmMemberDto
   ): Promise<UserEntity> {
-    const scopedFirmId = this.requireFirm(firmId);
+    return this.createUser(this.requireFirm(firmId), dto);
+  }
 
+  /**
+   * Platform-scoped manual create (SUPER_ADMIN targeting a tenant firm). Same
+   * as `create` but may assign any platform role (OWNER included).
+   */
+  async createPlatformUser(
+    firmId: string,
+    dto: CreatePlatformUserDto
+  ): Promise<UserEntity> {
+    return this.createUser(firmId, dto);
+  }
+
+  private async createUser(
+    firmId: string,
+    data: {
+      email: string;
+      password: string;
+      role?: PlatformRole;
+      name?: string;
+    }
+  ): Promise<UserEntity> {
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: data.email },
       select: { id: true }
     });
     if (existing) {
@@ -59,11 +82,11 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
-        name: dto.name ?? null,
-        passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
-        role: dto.role ?? UserRole.ASSOCIATE,
-        firmId: scopedFirmId,
+        email: data.email,
+        name: data.name ?? null,
+        passwordHash: await bcrypt.hash(data.password, BCRYPT_ROUNDS),
+        role: data.role ?? UserRole.ASSOCIATE,
+        firmId,
         isActive: true,
         mustChangePassword: true
       },

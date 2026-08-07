@@ -1,15 +1,25 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException
+} from "@nestjs/common";
 import * as bcrypt from "bcrypt";
-import { PrismaService } from "../../prisma/prisma.service";
 import { toEntities, toEntity } from "../../common/serialization/serialize";
-import { BCRYPT_ROUNDS } from "../auth/auth.constants";
 import { UserRole } from "../../generated/prisma/client";
+import { BCRYPT_ROUNDS } from "../auth/auth.constants";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreatePlatformUserDto } from "../users/dto/create-platform-user.dto";
+import { UserEntity } from "../users/entities/user.entity";
+import { UsersService } from "../users/users.service";
 import { CreateFirmDto } from "./dto/create-firm.dto";
 import { FirmEntity } from "./entities/firm.entity";
 
 @Injectable()
 export class FirmsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService
+  ) {}
 
   async findAll(): Promise<FirmEntity[]> {
     const firms = await this.prisma.firm.findMany({
@@ -74,5 +84,31 @@ export class FirmsService {
       ownerName: user.name,
       ownerEmail: user.email
     });
+  }
+
+  /**
+   * Manual user onboarding into a tenant firm by a SUPER_ADMIN. Delegates to
+   * UsersService (the single owner of firm-scoped accounts) so the create,
+   * duplicate-email and first-login rules stay in one place.
+   */
+  async createUser(firmId: string, dto: CreatePlatformUserDto): Promise<UserEntity> {
+    await this.requireFirm(firmId);
+    return this.usersService.createPlatformUser(firmId, dto);
+  }
+
+  /** Members of a firm for the platform page, newest first. */
+  async findUsers(firmId: string): Promise<UserEntity[]> {
+    await this.requireFirm(firmId);
+    return this.usersService.findAll(firmId);
+  }
+
+  private async requireFirm(firmId: string): Promise<void> {
+    const firm = await this.prisma.firm.findUnique({
+      where: { id: firmId },
+      select: { id: true }
+    });
+    if (!firm) {
+      throw new NotFoundException("Firm not found");
+    }
   }
 }

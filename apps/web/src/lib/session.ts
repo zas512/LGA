@@ -7,6 +7,8 @@ export interface UserSession {
   role: "SUPER_ADMIN" | "OWNER" | "ADMIN" | "ASSOCIATE";
   firmId: string | null;
   name: string | null;
+  /** True until a provisioned password has been replaced (first login). */
+  mustChangePassword?: boolean;
 }
 
 export interface AuthTokens {

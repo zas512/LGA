@@ -16,6 +16,8 @@ export interface User {
   } | null;
   activeCheckInTime?: string | null;
   isCheckedIn?: boolean;
+  /** True until a provisioned password has been replaced (first login). */
+  mustChangePassword?: boolean;
 }
 
 export interface LoginResponse {

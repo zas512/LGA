@@ -65,8 +65,13 @@ export function AuthProvider({
           );
           setUser(activeUser);
 
-          // If on login/register page while authenticated, route to appropriate page
-          if (pathname === "/login" || pathname === "/register") {
+          // First login: force the password-setup screen before anything else.
+          if (activeUser.mustChangePassword && pathname !== "/setup") {
+            console.log(
+              `[AuthProvider] 🔒 First login — routing to /setup`
+            );
+            router.replace("/setup");
+          } else if (pathname === "/login" || pathname === "/register") {
             const targetPath =
               activeUser.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
             console.log(
@@ -120,8 +125,11 @@ export function AuthProvider({
     try {
       const loggedUser = await authLogin(credentials);
       setUser(loggedUser);
-      const destination =
-        loggedUser.role === "SUPER_ADMIN" ? "/platform" : "/dashboard";
+      const destination = loggedUser.mustChangePassword
+        ? "/setup"
+        : loggedUser.role === "SUPER_ADMIN"
+          ? "/platform"
+          : "/dashboard";
       console.log(
         `[AuthProvider] 🚀 Login succeeded! Routing to: ${destination}`
       );

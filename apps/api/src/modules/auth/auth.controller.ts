@@ -30,6 +30,7 @@ import {
 } from "./auth.constants";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import { Roles } from "./decorators/roles.decorator";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { CreateInviteDto } from "./dto/create-invite.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
@@ -112,6 +113,19 @@ export class AuthController {
     response.clearCookie(ACCESS_TOKEN_COOKIE, { path: "/" });
     response.clearCookie(REFRESH_TOKEN_COOKIE, { path: "/" });
     return AuthController.result("Logged out successfully");
+  }
+
+  /** Authenticated (global guard). Re-mints tokens so the JWT clears too. */
+  @Post("change-password")
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @CurrentUser("sub") sub: string,
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) response: Response
+  ): Promise<AuthResultEntity> {
+    const tokens = await this.authService.changePassword(sub, dto);
+    this.setAuthCookies(response, tokens);
+    return AuthController.result("Password changed successfully");
   }
 
   /**

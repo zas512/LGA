@@ -20,6 +20,15 @@ export const FIRM_MEMBER_ROLES = [
 
 export type FirmMemberRole = (typeof FIRM_MEMBER_ROLES)[number];
 
+/** Roles a platform SUPER_ADMIN may hand out to a tenant firm (incl. OWNER). */
+export const PLATFORM_ROLES = [
+  UserRole.OWNER,
+  UserRole.ADMIN,
+  UserRole.ASSOCIATE
+] as const;
+
+export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+
 const trim = ({ value }: { value: unknown }) =>
   typeof value === "string" ? value.trim() : value;
 

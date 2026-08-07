@@ -18,6 +18,7 @@ import { AuthProvider, UserRole } from "../../generated/prisma/client";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { BCRYPT_ROUNDS } from "./auth.constants";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { CreateInviteDto } from "./dto/create-invite.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
@@ -198,6 +199,50 @@ export class AuthService {
     });
   }
 
+  /**
+   * Replaces a provisioned/first-login password. Re-mints the tokens so the
+   * new access token carries `mustChangePassword: false` and the server-side
+   * first-login gate clears without another round trip.
+   */
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto
+  ): Promise<AuthTokens> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true }
+    });
+    if (!user?.passwordHash) {
+      throw new BadRequestException("This account has no password set");
+    }
+
+    const currentMatches = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash
+    );
+    if (!currentMatches) {
+      throw new BadRequestException("Current password is incorrect");
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS),
+        mustChangePassword: false
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firmId: true,
+        name: true,
+        mustChangePassword: true
+      }
+    });
+
+    return this.issueAndPersistTokens(updated);
+  }
+
   async getMe(payload: JwtPayload): Promise<AuthUserEntity> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
@@ -209,6 +254,7 @@ export class AuthService {
         role: true,
         firmId: true,
         isActive: true,
+        mustChangePassword: true,
         associateId: true,
         firm: {
           select: {
@@ -244,6 +290,7 @@ export class AuthService {
       role: user.role,
       firmId: user.firmId,
       firm: user.firm,
+      mustChangePassword: user.mustChangePassword,
       isCheckedIn,
       activeCheckInTime
     });
@@ -484,13 +531,15 @@ export class AuthService {
     role: UserRole;
     firmId: string | null;
     name: string | null;
+    mustChangePassword: boolean;
   }): Promise<AuthTokens> {
     const tokens = await this.issueTokens({
       sub: user.id,
       email: user.email,
       role: user.role,
       firmId: user.firmId,
-      name: user.name
+      name: user.name,
+      mustChangePassword: user.mustChangePassword
     });
     await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
     return tokens;

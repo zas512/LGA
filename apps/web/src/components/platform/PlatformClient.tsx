@@ -1,5 +1,9 @@
 "use client";
 import { HeaderUpdater } from "@/components/layout/HeaderUpdater";
+import {
+  CreateFirmUserDialog,
+  type FirmUser
+} from "@/components/platform/CreateFirmUserDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +27,16 @@ import { CustomTable } from "@/components/ui/table";
 import type { ColumnConfig } from "@/types/tableTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Calendar, Mail, Plus, Search, User } from "lucide-react";
+import {
+  Building2,
+  Calendar,
+  Mail,
+  Plus,
+  Search,
+  User,
+  UserPlus,
+  Users
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -57,6 +70,7 @@ export function PlatformClient() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedFirm, setSelectedFirm] = useState<Firm | null>(null);
+  const [createFirm, setCreateFirm] = useState<Firm | null>(null);
 
   const {
     data: allFirms = [],
@@ -72,6 +86,21 @@ export function PlatformClient() {
       }
       return res.json();
     }
+  });
+
+  const { data: firmMembers = [], isLoading: membersLoading } = useQuery<
+    FirmUser[]
+  >({
+    queryKey: ["firm-members", selectedFirm?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/firms/${selectedFirm!.id}/users`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch firm members");
+      }
+      return res.json();
+    },
+    enabled: Boolean(selectedFirm)
   });
 
   useEffect(() => {
@@ -190,7 +219,7 @@ export function PlatformClient() {
       header: "ACTIONS",
       align: "center",
       render: (firm) => (
-        <div className="text-center">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
             variant="ghost"
             size="sm"
@@ -445,9 +474,64 @@ export function PlatformClient() {
                     </p>
                   </div>
                 </div>
+
+                {/* Firm members */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-primary" />
+                      Members
+                    </p>
+                    <span className="text-[11px] font-semibold text-muted-foreground">
+                      {firmMembers.length} total
+                    </span>
+                  </div>
+                  <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                    {membersLoading ? (
+                      <p className="py-2 text-xs font-medium text-muted-foreground">
+                        Loading members...
+                      </p>
+                    ) : firmMembers.length === 0 ? (
+                      <p className="py-2 text-xs font-medium text-muted-foreground">
+                        No members yet.
+                      </p>
+                    ) : (
+                      firmMembers.map((member) => (
+                        <div
+                          key={member.id}
+                          className="rounded-xl border border-border/60 bg-muted/40 p-2.5"
+                        >
+                          <p className="truncate text-xs font-bold text-foreground">
+                            {member.name || member.email}
+                          </p>
+                          <p className="truncate text-[11px] font-medium text-muted-foreground">
+                            {member.email}
+                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <Badge
+                              variant="navy"
+                              className="text-[10px] px-2"
+                            >
+                              {member.role}
+                            </Badge>
+                            {member.mustChangePassword && (
+                              <Badge
+                                variant="amber"
+                                className="text-[10px] px-2"
+                              >
+                                Pending reset
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
               </div>
 
-              <DialogFooter className="pt-4 border-t border-border/60">
+              <DialogFooter className="pt-4 border-t border-border/60 flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -456,11 +540,36 @@ export function PlatformClient() {
                 >
                   Close
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCreateFirm(selectedFirm)}
+                  className="rounded-xl text-xs font-bold gap-1.5"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Create User
+                </Button>
               </DialogFooter>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* CREATE USER DIALOG (manual: name/email/role/initial password) */}
+      <CreateFirmUserDialog
+        firm={createFirm ?? { id: "", name: "" }}
+        open={Boolean(createFirm)}
+        onOpenChange={(open) => {
+          if (!open) setCreateFirm(null);
+        }}
+        onCreated={() => {
+          if (createFirm) {
+            queryClient.invalidateQueries({
+              queryKey: ["firm-members", createFirm.id]
+            });
+          }
+        }}
+      />
     </div>
   );
 }

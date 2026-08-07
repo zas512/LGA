@@ -13,6 +13,8 @@ export interface JwtPayload {
   role: UserRole;
   firmId: string | null;
   name?: string | null;
+  /** True until the account's provisioned password has been replaced. */
+  mustChangePassword: boolean;
 }
 
 export const ACCESS_TOKEN_STRATEGY = "jwt-access";

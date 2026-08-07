@@ -13,6 +13,10 @@ export default async function DashboardLayout({
   if (!user) {
     redirect("/login");
   }
+  // First login: the provisioned password must be replaced before the app opens.
+  if (user.mustChangePassword) {
+    redirect("/setup");
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">

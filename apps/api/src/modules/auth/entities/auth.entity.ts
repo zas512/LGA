@@ -35,6 +35,9 @@ export class AuthUserEntity {
   firmId: string | null;
 
   @Expose()
+  mustChangePassword: boolean;
+
+  @Expose()
   avatarUrl: string | null;
 
   @Expose()
